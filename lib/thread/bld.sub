@@ -2,7 +2,6 @@ lib thread =
 	common.myr
 	hookstd.myr	# install thread hooks
 
-	condvar+futex.myr
 	mutex+futex.myr
 	sem+futex.myr
 	waitgrp+futex.myr
@@ -22,6 +21,7 @@ lib thread =
 	spawn+linux.myr
 
 	# freebsd impl of thread primitives
+	condvar+freebsd.myr
 	exit+freebsd-x64.s
 	futex+freebsd.myr
 	ncpu+freebsd.myr
@@ -35,6 +35,7 @@ lib thread =
 	#exit+netbsd-x64.s
 
 	# osx impl of thread primitives
+	condvar+osx.myr
 	futex+osx.myr
 	spawn+osx.myr
 	start+osx-x64.s
@@ -48,6 +49,7 @@ lib thread =
 	spawn+plan9.myr
 
 	# openbsd impl of thread primitives
+	condvar+openbsd:6.2.myr
 	exit+openbsd-x64.s
 	futex+openbsd:6.2.myr
 	ncpu+openbsd.myr
