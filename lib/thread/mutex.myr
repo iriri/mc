@@ -14,6 +14,8 @@ pkg thread =
 	const mtxlock	: (mtx : mutex# -> void)
 	const mtxtrylock	: (mtx : mutex# -> bool)
 	const mtxunlock	: (mtx : mutex# -> void)
+
+	pkglocal const mtxcontended	: (mtx : mutex# -> void)
 ;;
 
 const mkmtx = {
@@ -62,4 +64,8 @@ const mtxtrylock = {mtx
 	
 const mtxunlock = {mtx
 	xset(&mtx._state, 0)
+}
+
+const mtxcontended = {mtx
+	mtxlock(mtx)
 }

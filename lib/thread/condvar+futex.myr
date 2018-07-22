@@ -1,14 +1,14 @@
 use std
-use sys
 
 use "atomic"
 use "common"
 use "mutex"
+use "futex"
 
 pkg thread =
 	type cond = struct
 		_mtx	: mutex#
-		_seq	: uint32
+		_seq	: ftxtag
 	;;
 
 	const mkcond	: (mtx : mutex# -> cond)
@@ -29,31 +29,27 @@ const condwait = {cond
 	seq = cond._seq
 
 	mtxunlock(mtx)
-	sys.umtx_op((&cond._seq : void#), \
-		sys.Umtxwaituintpriv, \
-		(seq : uint64), \
-		Zptr, Zptr)
+	ftxwait(&cond._seq, seq, Zptr)
 
 	/*
 	We need to atomically set the mutex to contended. This allows us to
 	pass responsibility for waking up the potential other waiters on to the
 	unlocker of the mutex.
 	*/
-	while xchg(&mtx._state, Contended) != Unlocked
-		sys.umtx_op((&mtx._state : void#), \
-			sys.Umtxwaituintpriv, \
-			(Contended : uint64), \
-			Zptr, Zptr)
-	;;
+	mtxcontended(mtx)
 }
 
 const condsignal = {cond : cond#
 	xadd(&cond._seq, 1)
-	sys.umtx_op((&cond._seq : void#), sys.Umtxwakepriv, 1, Zptr, Zptr)
+	ftxwake(&cond._seq)
 }
 
+/*
+Yes, this invites the thundering herd but that's what you get for not having a
+requeue operation.
+*/
 const condbroadcast = {cond : cond#
 	xadd(&cond._seq, 1)
-	sys.umtx_op((&cond._seq : void#), sys.Umtxwakepriv, 0x7ffffff, Zptr, Zptr)
+	ftxwakeall(&cond._seq)
 }
 

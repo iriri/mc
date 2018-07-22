@@ -1,7 +1,7 @@
 use std
 use thread
 
-use "util"
+use thrtestutil
 
 const Nwakes = 1000
 
@@ -30,7 +30,7 @@ const main = {
 
 	nwoken = 0
 	nready = 0
-	mkherd(100, cvwaitonce)
+	thrtestutil.mkherd(100, cvwaitonce)
 
 	/* wait until the herd is ready */
 	while nready != 100	/* 0 to 99 */
