@@ -27,6 +27,7 @@ const main = {
 	;;
 	std.assert(nwoken == Nwakes, "wrong number of wakes")
 	std.assert(val == 123, "wrong val after all are done")
+	std.put("foo\n")
 
 	nwoken = 0
 	nready = 0
@@ -42,8 +43,10 @@ const main = {
 	thread.condbroadcast(&cv)
 	while nwoken != 100
 		/* nothing */
+		std.put("{}\n", nwoken)
 	;;
 	std.assert(nwoken == 100, "wrong thread count woken")
+	std.put("bar\n")
 
 }
 

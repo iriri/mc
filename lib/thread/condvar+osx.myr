@@ -45,11 +45,10 @@ const condsignal = {cond : cond#
 }
 
 /*
-Yes, this invites the thundering herd but that's what you get for not having a
-requeue operation.
+Yes, this invites the thundering herd but that's what OS X gets for not having
+a requeue operation.
 */
 const condbroadcast = {cond : cond#
 	xadd(&cond._seq, 1)
 	ftxwakeall(&cond._seq)
 }
-

@@ -3,12 +3,11 @@ use std
 use "atomic"
 use "common"
 use "mutex"
-use "futex"
 
 pkg thread =
 	type cond = struct
 		_mtx	: mutex#
-		_seq	: ftxtag
+		_seq	: uint32
 	;;
 
 	const mkcond	: (mtx : mutex# -> cond)
@@ -29,7 +28,7 @@ const condwait = {cond
 	seq = cond._seq
 
 	mtxunlock(mtx)
-	ftxwait(&cond._seq, seq, Zptr)
+	sys.futex(&cond._seq, sys.Futexwait, seq, Zptr, Zptr)
 
 	/*
 	We need to atomically set the mutex to contended. This allows us to
@@ -41,15 +40,12 @@ const condwait = {cond
 
 const condsignal = {cond : cond#
 	xadd(&cond._seq, 1)
-	ftxwake(&cond._seq)
+	sys.futex(&cond._seq, sys.Futexwake, 1, Zptr, Zptr)
 }
 
-/*
-Yes, this invites the thundering herd but that's what you get for not having a
-requeue operation.
-*/
 const condbroadcast = {cond : cond#
 	xadd(&cond._seq, 1)
-	ftxwakeall(&cond._seq)
+	sys.futex(&cond._seq, sys.Futexrequeue, 1,
+		(0x7fffffff : sys.timespec#),
+		(&cond._mtx._state : uint32#))
 }
-

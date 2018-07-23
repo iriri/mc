@@ -45,11 +45,11 @@ const condsignal = {cond : cond#
 }
 
 /*
-Yes, this invites the thundering herd but that's what you get for not having a
-requeue operation.
+`umtx_op` fully supports implementing condvars efficiently but also requires
+condvars to be implemented in a specific way. For now we'll just invite the
+thundering herd.
 */
 const condbroadcast = {cond : cond#
 	xadd(&cond._seq, 1)
 	ftxwakeall(&cond._seq)
 }
-

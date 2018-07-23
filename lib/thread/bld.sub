@@ -2,6 +2,7 @@ lib thread =
 	common.myr
 	hookstd.myr	# install thread hooks
 
+	# futex-based impls
 	mutex+futex.myr
 	sem+futex.myr
 	waitgrp+futex.myr

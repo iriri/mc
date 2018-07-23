@@ -51,8 +51,7 @@ const condbroadcast = {cond : cond#
 	used for the number of threads to move, and is not ignored when
 	requeueing
 	*/
-	sys.futex(&cond._seq, sys.Futexcmprequeue | sys.Futexpriv, \
-		1, (0x7fffffff : sys.timespec#), \
-		(&cond._mtx._state : int32#), cond._seq)
+	sys.futex(&cond._seq, sys.Futexrequeue | sys.Futexpriv,
+		1, (0x7fffffff : sys.timespec#),
+		(&cond._mtx._state : int32#), 0)
 }
-
