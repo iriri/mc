@@ -1,7 +1,7 @@
 use std
+use sys
 
 use "atomic"
-use "common"
 use "mutex"
 use "futex"
 
@@ -13,6 +13,7 @@ pkg thread =
 
 	const mkcond	: (mtx : mutex# -> cond)
 	const condwait	: (cond : cond# -> void)
+	const condtimedwait	: (cond : cond#, tmout : uint32 -> bool)
 	const condsignal	: (cond : cond# -> void)
 	const condbroadcast	: (cond : cond# -> void)
 ;;
@@ -22,6 +23,10 @@ const mkcond = {mtx
 }
 
 const condwait = {cond
+	condtimedwait(cond, 0)
+}
+
+const condtimedwait = {cond, tmout
 	var seq
 	var mtx
 
@@ -29,13 +34,12 @@ const condwait = {cond
 	seq = cond._seq
 	mtxunlock(mtx)
 
-	/*
-	FIXME?: `ftxwait` can be interrupted but `condwait` should always be
-	done in a loop anyway.
-	*/
-	ftxwait(&cond._seq, seq, Zptr)
+	if ftxwait(&cond._seq, seq, 0) == sys.Etimedout
+		-> false
+	;;
 
 	mtxlock(mtx)
+	-> true
 }
 
 const condsignal = {cond : cond#

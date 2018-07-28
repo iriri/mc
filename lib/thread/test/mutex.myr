@@ -21,6 +21,17 @@ const main = {
 	if val != 1000 * 20
 		std.fatal("mutexes are broken, got {}\n", val)
 	;;
+
+	thread.mtxlock(&mtx)
+	var start = std.now()
+	std.assert(!thread.mtxtimedlock(&mtx, 1_000_000),
+		"mutexes are broken: expected sys.Etimedout\n")
+	var elapsed = std.now() - start
+	if elapsed < 900_000
+		std.fatal("mtxtimedlock returned early after {} microseconds\n", elapsed)
+	elif elapsed > 2_000_000
+		std.fatal("mtxtimedlock returned late after {} microseconds\n", elapsed)
+	;;
 }
 
 const incvar = {

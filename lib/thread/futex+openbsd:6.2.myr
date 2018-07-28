@@ -7,13 +7,65 @@ pkg thread =
 	type ftxtag = uint32
 	impl atomic ftxtag
 
-	const ftxwait : (uaddr : ftxtag#, val : ftxtag, timeout : sys.timespec# -> int)
+	const ftxwait : (uaddr : ftxtag#, val : ftxtag, tmout : uint32 -> sys.errno)
 	const ftxwake : (uaddr : ftxtag# -> int)
 	const ftxwakeall : (uaddr : ftxtag# -> int)
 ;;
 
-const ftxwait = {uaddr, val, timeout
-	-> sys.futex((uaddr : uint32#), sys.Futexwait, (val : int), timeout, Zptr)
+const ftxwait = {uaddr, val, tmout
+	var rc
+
+	if tmout == Zptr
+		while (rc = sys.futex((uaddr : uint32#),
+				sys.Futexwait,
+				(val : int),
+				Zptr,
+				Zptr)) == sys.Eintr
+		;;
+	else
+		var t = (tmout : uint64)
+		var start
+		std.assert(sys.clock_gettime(`sys.Clockmonotonic, &start) == 0,
+			"error: clock_gettime returned -1\n")
+
+		var ts = [
+			.sec = t / 1_000_000
+			.nsec = (t % 1_000_000) * 1000
+		]
+
+		while (rc = sys.futex((uaddr : uint32#),
+				sys.Futexwait,
+				(val : int),
+				&ts,
+				Zptr)) == sys.Eintr
+			var now
+			std.assert(sys.clock_gettime(`sys.Clockmonotonic, &now) == 0,
+				"error: clock_gettime returned -1\n")
+
+			var sec = ts.sec - (now.sec - start.sec)
+			if sec > ts.sec
+				-> sys.Etimedout
+			;;
+			ts.sec = sec
+
+			var nsec = ts.nsec - (now.nsec - start.nsec)
+			if nsec > ts.nsec
+				if ts.sec == 0
+					-> sys.Etimedout
+				;;
+				ts.sec--
+				ts.nsec = 1_000_000_000 - ts.nsec - (start.nsec - now.nsec)
+			;;
+			ts.nsec = nsec
+		;;
+	;;
+
+	match rc
+	| 0: -> 0
+	| sys.Eagain: -> sys.Eagain
+	| sys.Etimedout: -> sys.Etimedout
+	| err: std.fatal("error: futex returned {}\n", err)
+	;;
 }
 
 const ftxwake = {uaddr

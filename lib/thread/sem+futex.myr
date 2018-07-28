@@ -1,4 +1,5 @@
 use std
+use sys
 
 use "atomic"
 use "common"
@@ -12,6 +13,7 @@ pkg thread =
 	const mksem : (v : uint32 -> sem)
 	const semwait : (s : sem# -> void)
 	const semtrywait : (s : sem# -> bool)
+	const semtimedwait : (sem : sem#, tmout : uint32 -> bool)
 	const sempost : (s : sem# -> void)
 ;;
 
@@ -20,16 +22,7 @@ const mksem = {v
 }
 
 const semwait = {s
-	var v = 0
-
-	for ; ;
-		while (v = s._val) > 0
-			if xcas(&s._val, v, v - 1) == v
-				-> void
-			;;
-		;;
-		ftxwait(&s._val, v, Zptr)
-	;;
+	semtimedwait(s, 0)
 }
 
 const semtrywait = {s
@@ -40,6 +33,22 @@ const semtrywait = {s
 		;;
 		if xcas(&s._val, v, v - 1) == v
 			-> true
+		;;
+	;;
+	-> false /* Unreachable */
+}
+
+const semtimedwait = {s, tmout
+	var v = 0
+
+	for ; ;
+		while (v = s._val) > 0
+			if xcas(&s._val, v, v - 1) == v
+				-> true
+			;;
+		;;
+		if ftxwait(&s._val, v, tmout) == sys.Etimedout
+			-> false
 		;;
 	;;
 	-> false /* Unreachable */
