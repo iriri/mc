@@ -14,26 +14,30 @@ pkg thread =
 ;;
 
 const ftxwait = {uaddr, val, tmout
-	var ut : sys._umtx_time
-	var utp : sys._umtx_time#
-	var utsize : void#
-	var now
-	var rc
+	var ut : sys._umtx_time, utp, utsize, rc
 
 	if tmout == Zptr
 		utp = Zptr
 		utsize = Zptr
 	else
-		ut = [
-			._tmout = tmout#,
-			._flags = (sys.Umtxabstime : uint32),
-			._clockid = 1, /* CLOCK_MONOTONIC. Not exported from sys. */
-		]
+		var t = (tmout : int64)
+		std.assert(sys.clock_gettime(`sys.Clockmonotonic, &ut._tmout) == 0,
+			"error: clock_gettime returned -1\n")
+		ut._tmout.nsec += (t % 1_000_000) * 1000
+		ut._tmout.sec += (ts.nsec / 1_000_000_000) + (t / 1_000_000)
+		ut._tmout.nsec %= 1_000_000_000
+		ut._flags = (sys.Umtxabstime : uint32),
+		ut._clockid = 1, /* CLOCK_MONOTONIC. Not exported from sys. */
 		utp = &ut
 		utsize = (sizeof(sys._umtx_time) : void#)
 	;;
 
-	while (rc = sys.umtx_op((uaddr : void#), sys.Umtxwaituintpriv, (val : uint64), utsize, utp)
+	while ((rc = sys.umtx_op((uaddr : void#),
+			sys.Umtxwaituintpriv,
+			(val : uint64),
+			utsize,
+			utp) : sys.errno)) == sys.Eintr
+	;;
 
 	match rc
 	| 0: -> 0

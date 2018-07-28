@@ -17,11 +17,11 @@ const ftxwait = {uaddr, val, tmout
 	var rc
 
 	if tmout == Zptr
-		while (rc = sys.futex((uaddr : uint32#),
+		while (rc = (sys.futex((uaddr : uint32#),
 				sys.Futexwait,
 				(val : int),
 				Zptr,
-				Zptr)) == sys.Eintr
+				Zptr) : sys.errno)) == sys.Eintr
 		;;
 	else
 		var t = (tmout : uint64)
@@ -34,30 +34,28 @@ const ftxwait = {uaddr, val, tmout
 			.nsec = (t % 1_000_000) * 1000
 		]
 
-		while (rc = sys.futex((uaddr : uint32#),
+		while (rc = (sys.futex((uaddr : uint32#),
 				sys.Futexwait,
 				(val : int),
 				&ts,
-				Zptr)) == sys.Eintr
+				Zptr) : sys.errno)) == sys.Eintr
 			var now
 			std.assert(sys.clock_gettime(`sys.Clockmonotonic, &now) == 0,
 				"error: clock_gettime returned -1\n")
+			var t1 = t - (((now.sec - start.sec) * 1_000_000) : uint32)
+			var nsec = now.nsec - start.nsec
+			if nsec >= 0
+				t1 -= (nsec / 1000 : uint32)
+			else
+				t1 -= ((1_000_000_000 + nsec) / 1000 : uint32)
+			;;
 
-			var sec = ts.sec - (now.sec - start.sec)
-			if sec > ts.sec
+			if t1 > t
 				-> sys.Etimedout
 			;;
-			ts.sec = sec
-
-			var nsec = ts.nsec - (now.nsec - start.nsec)
-			if nsec > ts.nsec
-				if ts.sec == 0
-					-> sys.Etimedout
-				;;
-				ts.sec--
-				ts.nsec = 1_000_000_000 - ts.nsec - (start.nsec - now.nsec)
-			;;
-			ts.nsec = nsec
+			ts.sec = t1 / 1_000_000
+			ts.nsec = (t1 % 1_000_000) * 1000
+			t = t1
 		;;
 	;;
 

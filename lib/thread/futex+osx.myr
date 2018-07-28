@@ -38,20 +38,16 @@ const ftxwait = {uaddr, val, tmout
 			var now
 			std.assert(sys.clock_gettime(`sys.Clockmonotonic, &now) == 0,
 				"error: clock_gettime returned -1\n")
-
 			var t = tmout - (((now.sec - start.sec) * 1_000_000) : uint32)
-			if t > tmout
-				-> sys.Etimedout
+			var nsec = now.nsec - start.nsec
+			if nsec >= 0
+				t -= (nsec / 1000 : uint32)
+			else
+				t -= ((1_000_000_000 + nsec) / 1000 : uint32)
 			;;
 
-			if now.nsec >= start.nsec
-				t -= ((now.nsec - start.nsec) / 1000 : uint32)
-			else
-				t -= 1_000_000
-				t -= (1_000_000_000 - (start.nsec - now.nsec) : uint32)
-				if t > tmout
-					-> sys.Etimedout
-				;;
+			if t > tmout
+				-> sys.Etimedout
 			;;
 			tmout = t
 		;;
