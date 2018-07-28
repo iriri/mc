@@ -32,7 +32,7 @@ const condtimedwait = {cond, tmout
 	var mtx = cond._mtx
 
 	mtxunlock(mtx)
-	if ftxwait(&cond._seq, seq, 0) == sys.Etimedout
+	if ftxwait(&cond._seq, seq, tmout) == sys.Etimedout
 		-> false
 	;;
 
