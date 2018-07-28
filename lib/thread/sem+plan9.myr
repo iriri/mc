@@ -13,6 +13,7 @@ pkg thread =
 	const mksem : (v : uint32 -> sem)
 	const semwait : (s : sem# -> void)
 	const semtrywait : (s : sem# -> bool)
+	const semtimedwait : (sem : sem#, tmout : uint32 -> bool)
 	const sempost : (s : sem# -> void)
 ;;
 
@@ -44,6 +45,18 @@ const semtrywait = {s
 		;;
 	;;
 	-> false /* Unreachable */
+}
+
+const semtimedwait = {mtx, tmout
+	var iters = tmout / 100
+
+	for var i = 0; i < iters; i++
+		if semtrywait(s)
+			-> true
+		;;
+		std.nanosleep(90_000)
+	;;
+	-> false
 }
 
 const sempost = {s

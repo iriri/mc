@@ -13,6 +13,7 @@ pkg thread =
 	const mkmtx	: (-> mutex)
 	const mtxlock	: (mtx : mutex# -> void)
 	const mtxtrylock	: (mtx : mutex# -> bool)
+	const mtxtimedlock	: (mtx : mutex# , tmout : uint32 -> bool)
 	const mtxunlock	: (mtx : mutex# -> void)
 ;;
 
@@ -57,6 +58,22 @@ const mtxlock = {mtx
 
 const mtxtrylock = {mtx
 	-> xcas(&mtx._state, 0, 1) == 0
+}
+
+const mtxtimedlock = {mtx, tmout
+	if tmout == 0
+		mtxlock(mtx)
+		-> true
+	;;
+
+	var iters = tmout / 100
+	for var i = 0; i < iters; i++
+		if xcas(&mtx._state, 0, 1) == 0
+			-> true
+		;;
+		std.nanosleep(90_000)
+	;;
+	-> false
 }
 
 	

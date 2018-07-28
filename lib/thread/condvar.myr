@@ -14,6 +14,7 @@ pkg thread =
 
 	const mkcond	: (mtx : mutex# -> cond)
 	const condwait	: (cond : cond# -> void)
+	const condtimedwait	: (cond : cond#, tmout : uint32 -> bool)
 	const condsignal	: (cond : cond# -> void)
 	const condbroadcast	: (cond : cond# -> void)
 ;;
@@ -35,6 +36,10 @@ const mkcond = {mtx
 }
 
 const condwait = {cond
+	condtimedwait(cond, 0)
+}
+
+const condtimedwait = {cond, tmout
 	var mtx = cond._mtx
 	var lock = &cond._lock
 	var waiter = std.mk([.sem = mksem(0)])
@@ -49,12 +54,39 @@ const condwait = {cond
 		waiter.prev.next = waiter
 		q.prev = waiter
 	;;
-
 	mtxunlock(lock)
 	mtxunlock(mtx)
-	semwait(&waiter.sem)
+
+	if !semtimedwait(&waiter.sem, tmout)
+		var rc = false
+
+		mtxlock(lock)
+		if waiter.prev == Zptr /* Already shifted off the front */
+			rc = true
+			goto ret
+		;;
+		if waiter.prev == waiter /* We are the only waiter in the queue */
+			cond._waitq = Zptr
+			goto ret
+		;;
+
+		if waiter.prev.next == waiter
+			waiter.prev.next = waiter.next
+		;;
+		if waiter.next != Zptr
+			waiter.next.prev = waiter.prev
+		else
+			cond._waitq.prev = waiter.prev
+		;;
+:ret
+		mtxunlock(lock)
+		std.free(waiter)
+		-> rc
+	;;
+
 	std.free(waiter)
 	mtxlock(mtx)
+	-> true
 }
 
 const condsignal = {cond
@@ -66,6 +98,7 @@ const condsignal = {cond
 		if head.next != Zptr
 			head.next.prev = head.prev
 		;;
+		head.prev = Zptr
 		cond._waitq = head.next
 		sempost(&head.sem)
 	;;
@@ -82,6 +115,7 @@ const condbroadcast = {cond
 
 	mtxlock(lock)
 	while (head = cond._waitq) != Zptr
+		head.prev = Zptr
 		cond._waitq = head.next
 		sempost(&head.sem)
 	;;

@@ -33,6 +33,17 @@ const main = {
 	while nwoken != 100
 		thread.condbroadcast(&cv)
 	;;
+
+	thread.mtxlock(&mtx)
+	var start = std.now()
+	std.assert(!thread.condtimedwait(&cv, 1_000_000),
+		"condtimedwait is broken: expected sys.Etimedout\n")
+	var elapsed = std.now() - start
+	if elapsed < 900_000
+		std.fatal("condtimedwait returned early after {} microseconds\n", elapsed)
+	elif elapsed > 1_500_000
+		std.fatal("condtimedwait returned late after {} microseconds\n", elapsed)
+	;;
 }
 
 const cvwait = {

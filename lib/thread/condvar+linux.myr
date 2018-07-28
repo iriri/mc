@@ -28,13 +28,10 @@ const condwait = {cond
 }
 
 const condtimedwait = {cond, tmout
-	var seq
-	var mtx
+	var seq = cond._seq
+	var mtx = cond._mtx
 
-	mtx = cond._mtx
-	seq = cond._seq
 	mtxunlock(mtx)
-
 	if ftxwait(&cond._seq, seq, 0) == sys.Etimedout
 		-> false
 	;;

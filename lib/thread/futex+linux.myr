@@ -1,3 +1,4 @@
+use std
 use sys
 
 use "atomic"
@@ -40,7 +41,7 @@ const ftxwait = {uaddr, val, tmout
 		while (rc = (sys.futex((uaddr : int32#),
 				sys.Futexwaitbitset | sys.Futexpriv,
 				(val : int32),
-				&end,
+				&ts,
 				Zptr,
 				sys.Futexbitsetmatchany) : sys.errno)) == sys.Eintr
 		;;

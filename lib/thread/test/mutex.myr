@@ -25,11 +25,11 @@ const main = {
 	thread.mtxlock(&mtx)
 	var start = std.now()
 	std.assert(!thread.mtxtimedlock(&mtx, 1_000_000),
-		"mutexes are broken: expected sys.Etimedout\n")
+		"mtxtimedlock is broken: expected sys.Etimedout\n")
 	var elapsed = std.now() - start
 	if elapsed < 900_000
 		std.fatal("mtxtimedlock returned early after {} microseconds\n", elapsed)
-	elif elapsed > 2_000_000
+	elif elapsed > 1_500_000
 		std.fatal("mtxtimedlock returned late after {} microseconds\n", elapsed)
 	;;
 }
