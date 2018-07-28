@@ -563,7 +563,7 @@ pkg sys =
 	const Futexpriv	: futexop = 128
 	const Futexclockrt	: futexop = 256
 
-	const Futexbitsetmatchany : int32 = 0xffffffff
+	const Futexbitsetmatchany : int32 = -1
 	
 	/* poll events : posix */
 	const Pollin	: pollevt = 0x001	/* There is data to read.  */

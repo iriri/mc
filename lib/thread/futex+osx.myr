@@ -21,20 +21,20 @@ const ftxwait = {uaddr, val, tmout
 	var rc
 
 	if tmout == 0
-		while (rc = sys.ulock_wait(sys.Ulockcompareandwait,
+		while (rc = (sys.ulock_wait(sys.Ulockcompareandwait,
 				(uaddr : uint64#),
 				(val : uint64),
-				0)) == (sys.Eintr : int)
+				0) : sys.errno)) == sys.Eintr
 		;;
 	else
 		var start
 		std.assert(sys.clock_gettime(`sys.Clockmonotonic, &start) == 0,
 			"error: clock_gettime returned -1\n")
 
-		while (rc = sys.ulock_wait(sys.Ulockcompareandwait,
+		while (rc = (sys.ulock_wait(sys.Ulockcompareandwait,
 				(uaddr : uint64#),
 				(val : uint64),
-				tmout)) == (sys.Eintr : int)
+				tmout) : sys.errno)) == sys.Eintr
 			var now
 			std.assert(sys.clock_gettime(`sys.Clockmonotonic, &now) == 0,
 				"error: clock_gettime returned -1\n")
@@ -57,7 +57,7 @@ const ftxwait = {uaddr, val, tmout
 		;;
 	;;
 
-	match (rc : sys.errno)
+	match rc
 	| 0: -> 0
 	| sys.Eagain: -> sys.Eagain
 	| sys.Etimedout: -> sys.Etimedout
