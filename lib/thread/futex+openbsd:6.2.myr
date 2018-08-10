@@ -16,7 +16,7 @@ pkg thread =
 const ftxwait = {uaddr, val, tmout
 	var rc
 
-	if tmout == Zptr
+	if tmout == 0
 		while (rc = (sys.futex((uaddr : uint32#),
 				sys.Futexwait,
 				(val : int),
@@ -24,7 +24,7 @@ const ftxwait = {uaddr, val, tmout
 				Zptr) : sys.errno)) == sys.Eintr
 		;;
 	else
-		var t = (tmout : uint64)
+		var t = (tmout : int64)
 		var start
 		std.assert(sys.clock_gettime(`sys.Clockmonotonic, &start) == 0,
 			"error: clock_gettime returned -1\n")
@@ -41,12 +41,12 @@ const ftxwait = {uaddr, val, tmout
 			var now
 			std.assert(sys.clock_gettime(`sys.Clockmonotonic, &now) == 0,
 				"error: clock_gettime returned -1\n")
-			var t1 = t - (((now.sec - start.sec) * 1_000_000) : uint32)
+			var t1 = t - ((now.sec - start.sec) * 1_000_000)
 			var nsec = now.nsec - start.nsec
 			if nsec >= 0
-				t1 -= (nsec / 1000 : uint32)
+				t1 -= nsec / 1000
 			else
-				t1 -= ((1_000_000_000 + nsec) / 1000 : uint32)
+				t1 -= (1_000_000_000 + nsec) / 1000
 			;;
 
 			if t1 > t
