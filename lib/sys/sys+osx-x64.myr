@@ -25,13 +25,13 @@ pkg sys =
 	;;
 
 	type timespec = struct
-		sec	: uint64
-		nsec	: uint32
+		sec	: int64
+		nsec	: int64
 	;;
 
 	type timeval = struct
-		sec	: uint64
-		usec	: uint32
+		sec	: int64
+		usec	: int32
 	;;
 
 	type timezone = struct
@@ -1021,7 +1021,7 @@ const clock_gettime = {clk, ts
 
 	ret = gettimeofday(&tv, (0 : timezone#))
 	ts.sec = tv.sec
-	ts.nsec = tv.usec * 1000
+	ts.nsec = (tv.usec * 1000 : int64)
 	-> ret
 }
 
@@ -1029,7 +1029,7 @@ const clock_settime = {clk, ts
 	var tv
 
 	tv.sec = ts.sec
-	tv.usec = ts.nsec / 1000
+	tv.usec = (ts.nsec / 1000 : int32)
 	-> settimeofday(&tv, (0 : timezone#))
 }
 
