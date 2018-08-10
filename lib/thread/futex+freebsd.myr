@@ -1,3 +1,4 @@
+use std
 use sys
 
 use "atomic"
@@ -7,26 +8,43 @@ pkg thread =
 	type ftxtag = uint32
 	impl atomic ftxtag
 
-	const ftxwait : (uaddr : ftxtag#, val : ftxtag, timeout : sys.timespec# -> int)
+	const ftxwait : (uaddr : ftxtag#, val : ftxtag, tmout : uint32 -> sys.errno)
 	const ftxwake : (uaddr : ftxtag# -> int)
 	const ftxwakeall : (uaddr : ftxtag# -> int)
 ;;
 
-const ftxwait = {uaddr, val, timeout
-	if timeout == Zptr
-		-> sys.umtx_op((uaddr : void#), sys.Umtxwaituintpriv, (val : uint64), Zptr, Zptr)
+const ftxwait = {uaddr, val, tmout
+	var ut : sys._umtx_time, utp, utsize, rc
+
+	if tmout == 0
+		utp = Zptr
+		utsize = Zptr
+	else
+		var t = (tmout : int64)
+		std.assert(sys.clock_gettime(`sys.Clockmonotonic, &ut._timeout) == 0,
+			"error: clock_gettime returned -1\n")
+		ut._timeout.nsec += (t % 1_000_000) * 1000
+		ut._timeout.sec += (ut._timeout.nsec / 1_000_000_000) + (t / 1_000_000)
+		ut._timeout.nsec %= 1_000_000_000
+		ut._flags = (sys.Umtxabstime : uint32)
+		ut._clockid = 1 /* CLOCK_MONOTONIC. Not exported from sys. */
+		utp = (&ut : void#)
+		utsize = (sizeof(sys._umtx_time) : void#)
 	;;
 
-	var ut : sys._umtx_time = [
-		._timeout = timeout#,
-		._flags = (sys.Umtxabstime : uint32),
-		._clockid = 1, /* CLOCK_MONOTONIC. Not exported from sys. */
-	]
-	-> sys.umtx_op((uaddr : void#),
-		sys.Umtxwaituintpriv,
-		(val : uint64),
-		(sizeof(sys._umtx_time) : void#),
-		(&ut : void#))
+	while (rc = (sys.umtx_op((uaddr : void#),
+			sys.Umtxwaituintpriv,
+			(val : uint64),
+			utsize,
+			utp) : sys.errno)) == sys.Eintr
+	;;
+
+	match rc
+	| 0: -> 0
+	| sys.Eagain: -> sys.Eagain
+	| sys.Etimedout: -> sys.Etimedout
+	| err: std.fatal("error: futex returned {}\n", err)
+	;;
 }
 
 const ftxwake = {uaddr

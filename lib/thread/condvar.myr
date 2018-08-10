@@ -20,7 +20,7 @@ pkg thread =
 
 /*
 The waitqueue is a doubly-linked list because we'll need to remove waiters from
-anywhere in the list when we add timeout support.
+anywhere in the list if we ever add timeout support.
 
 `cond._waitq.prev` is the tail of the queue.
 */

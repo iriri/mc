@@ -28,7 +28,7 @@ const semwait = {s
 				-> void
 			;;
 		;;
-		ftxwait(&s._val, v, Zptr)
+		ftxwait(&s._val, v, 0)
 	;;
 }
 

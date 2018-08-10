@@ -3,12 +3,13 @@ use sys
 
 use "atomic"
 use "common"
+use "futex"
 use "mutex"
 
 pkg thread =
 	type cond = struct
 		_mtx	: mutex#
-		_seq	: uint32
+		_seq	: ftxtag
 	;;
 
 	const mkcond	: (mtx : mutex# -> cond)
@@ -22,18 +23,11 @@ const mkcond = {mtx
 }
 
 const condwait = {cond
-	var seq : uint32
-	var mtx
+	var mtx = cond._mtx
+	var seq = xget(&cond._seq)
 
-	mtx = cond._mtx
-	seq = cond._seq
 	mtxunlock(mtx)
-
-	/*
-	FIXME?: `futex` can be interrupted but `condwait` should always be done
-	in a loop anyway.
-	*/
-	sys.futex(&cond._seq, sys.Futexwait, (seq : int), Zptr, Zptr)
+	ftxwait(&cond._seq, seq, 0)
 
 	/*
 	We need to atomically set the mutex to contended. This allows us to
@@ -45,12 +39,12 @@ const condwait = {cond
 
 const condsignal = {cond : cond#
 	xadd(&cond._seq, 1)
-	sys.futex(&cond._seq, sys.Futexwake, 1, Zptr, Zptr)
+	ftxwake(&cond._seq)
 }
 
 const condbroadcast = {cond : cond#
 	xadd(&cond._seq, 1)
-	sys.futex(&cond._seq, sys.Futexrequeue, 1,
+	sys.futex((&cond._seq : uint32#), sys.Futexrequeue, 1,
 		(0x7fffffff : sys.timespec#),
 		(&cond._mtx._state : uint32#))
 }
