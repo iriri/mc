@@ -1,0 +1,49 @@
+use std
+use thread
+
+use thrtestutil
+
+const Nherd = 20
+const Nloops = 100_000
+
+var val : uint64
+var nreaders : uint32
+var nwriters : uint32
+var rw : thread.rwlock
+var done
+
+const main = {
+	rw = thread.mkrw()
+	done = thread.mkwg(Nherd)
+
+	thrtestutil.mkherd(Nherd, read)
+	thrtestutil.mkherd(Nherd, incvar)
+	thread.wgwait(&done)
+	if val != Nloops * (Nherd : uint64)
+		std.fatal("rwlocks are broken, got {}\n", val)
+	;;
+}
+
+const incvar = {
+	for var i = 0; i < Nloops; i++
+		thread.rwwlock(&rw)
+		thread.xadd(&nwriters, 1)
+		std.assert(thread.xget(&nreaders) == 0, "incvar: rwlocks are broken\n")
+		val++
+		thread.xadd(&nwriters, -1)
+		thread.rwwunlock(&rw)
+	;;
+	std.put("done\n")
+	thread.wgpost(&done)
+}
+
+const read = {
+	for ; ;
+		thread.rwrlock(&rw)
+		thread.xadd(&nreaders, 1)
+		std.assert(thread.xget(&nwriters) == 0, "read: rwlocks are broken\n")
+		thread.xadd(&nreaders, -1)
+		thread.rwrunlock(&rw)
+		std.usleep(100_000)
+	;;
+}

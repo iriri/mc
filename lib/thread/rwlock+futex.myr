@@ -1,0 +1,88 @@
+use std
+
+use "atomic"
+use "futex"
+
+pkg thread =
+	type rwlock = struct
+		_val : ftxtag /* _nreaders:31 : uint32, _wbit:1 : uint32 */
+	;;
+
+	const mkrw       : (-> rwlock)
+	const rwrlock    : (rw : rwlock# -> void)
+	const rwwlock    : (rw : rwlock# -> void)
+	const rwtryrlock : (rw : rwlock# -> bool)
+	const rwtrywlock : (rw : rwlock# -> bool)
+	const rwrunlock  : (rw : rwlock# -> void)
+	const rwwunlock  : (rw : rwlock# -> void)
+;;
+
+const Nrmask = 0x7fffffff
+const Wbit   = 0x80000000
+
+const mkrw = {
+	-> [._val = 0]
+}
+
+const rwrlock = {rw
+	for ; ;
+		var v = xget(&rw._val)
+		match v & Nrmask
+		| Nrmask - 1: std.die("error: rwlock value overflowed\n")
+		| Nrmask:
+			if xcas(&rw._val, v, Nrmask | Wbit) == v
+				ftxwait(&rw._val, Nrmask | Wbit, 0)
+			;;
+		| _:
+			if xcas(&rw._val, v, v + 1) == v
+				-> void
+			;;
+		;;
+	;;
+}
+
+const rwwlock = {rw
+	for ; ;
+		var v = xcas(&rw._val, 0, Nrmask)
+		if v == 0
+			-> void
+		;;
+
+		if xcas(&rw._val, v, v | Wbit) == v
+			ftxwait(&rw._val, v | Wbit, 0)
+		;;
+	;;
+}
+
+const rwtryrlock = {rw
+	for ; ;
+		var v = xget(&rw._val)
+		match v & Nrmask
+		| Nrmask - 1: std.die("error: rwlock value overflowed\n")
+		| Nrmask: -> false
+		| _:
+			if xcas(&rw._val, v, v + 1) == v
+				-> true
+			;;
+		;;
+	;;
+	-> false /* Unreachable */
+}
+
+const rwtrywlock = {rw
+	-> xcas(&rw._val, 0, Nrmask) == 0
+}
+
+const rwrunlock = {rw
+	var prev = xadd(&rw._val, -1)
+	std.assert(prev & Nrmask != 0, "error: rwlock value underflowed\n")
+	if prev & Nrmask == 1 && prev & Wbit != 0
+		ftxwake(&rw._val)
+	;;
+}
+
+const rwwunlock = {rw
+	if xchg(&rw._val, 0) & Wbit != 0
+		ftxwakeall(&rw._val) /* Just Do It(tm). */
+	;;
+}
