@@ -9,8 +9,8 @@ pkg thread =
 	impl atomic ftxtag
 
 	const ftxwait : (uaddr : ftxtag#, val : ftxtag, tmout : uint32 -> sys.errno)
-	const ftxwake : (uaddr : ftxtag# -> int)
-	const ftxwakeall : (uaddr : ftxtag# -> int)
+	const ftxwake : (uaddr : ftxtag# -> void)
+	const ftxwakeall : (uaddr : ftxtag# -> void)
 ;;
 
 const ftxwait = {uaddr, val, tmout
@@ -55,11 +55,11 @@ const ftxwait = {uaddr, val, tmout
 }
 
 const ftxwake = {uaddr
-	-> sys.futex((uaddr : int32#), sys.Futexwake | sys.Futexpriv, 1, Zptr, Zptr, 0)
+	sys.futex((uaddr : int32#), sys.Futexwake | sys.Futexpriv, 1, Zptr, Zptr, 0)
 }
 
 const ftxwakeall = {uaddr
-	-> sys.futex((uaddr : int32#), sys.Futexwake | sys.Futexpriv, 0x7fffffff, Zptr, Zptr, 0)
+	sys.futex((uaddr : int32#), sys.Futexwake | sys.Futexpriv, 0x7fffffff, Zptr, Zptr, 0)
 }
 
 impl atomic ftxtag =
