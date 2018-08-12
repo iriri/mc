@@ -1,0 +1,149 @@
+use std
+
+use "common"
+use "mutex"
+use "sem"
+
+pkg thread =
+	type rwlock = struct
+		_head  : rwwaiter#
+		_tail  : rwwaiter#
+		_lock  : mutex
+		_state : uint32 /* _nreaders:31 : uint32, _wbit:1 : uint32 */
+	;;
+
+	const mkrw       : (-> rwlock)
+	const rwrlock    : (rw : rwlock# -> void)
+	const rwwlock    : (rw : rwlock# -> void)
+	const rwtryrlock : (rw : rwlock# -> bool)
+	const rwtrywlock : (rw : rwlock# -> bool)
+	const rwrunlock  : (rw : rwlock# -> void)
+	const rwwunlock  : (rw : rwlock# -> void)
+;;
+
+/*
+We can't use a condvar here if we want to avoid heap allocations, which we do,
+if only for consistency with the futex based implementation.
+*/
+type rwwaiter = struct
+	next : rwwaiter#
+	sem : sem
+;;
+
+const Nrmask = 0x7fffffff
+const Wbit   = 0x80000000
+
+const mkrw = {
+	-> [._lock = mkmtx()]
+}
+
+const rwrlock = {rw
+	for ; ;
+		mtxlock(&rw._lock)
+		match rw._state & Nrmask
+		| Nrmask - 1: std.die("error: rwlock overflowed\n")
+		| Nrmask:
+			rw._state |= Wbit
+			var waiter = std.mk([.sem = mksem(0)])
+			if rw._tail != Zptr
+				rw._tail.next = waiter
+			;;
+			rw._tail = waiter
+
+			mtxunlock(&rw._lock)
+			semwait(&waiter.sem)
+			std.free(waiter)
+		| _:
+			rw._state++
+			mtxunlock(&rw._lock)
+			-> void
+		;;
+	;;
+}
+
+const rwwlock = {rw
+	for ; ;
+		mtxlock(&rw._lock)
+		if rw._state == 0
+			rw._state = Nrmask
+			mtxunlock(&rw._lock)
+			-> void
+		;;
+
+		/* Favor writers over readers to avoid writer starvation. */
+		rw._state |= Wbit
+		var waiter = std.mk([.sem = mksem(0)])
+		waiter.next = rw._head
+		rw._head = waiter
+
+		mtxunlock(&rw._lock)
+		semwait(&waiter.sem)
+		std.free(waiter)
+	;;
+}
+
+const rwtryrlock = {rw
+	mtxlock(&rw._lock)
+	match rw._state & Nrmask
+	| Nrmask - 1: std.die("error: rwlock overflowed\n")
+	| Nrmask:
+		mtxunlock(&rw._lock)
+		-> false
+	| _:
+		rw._state++
+		mtxunlock(&rw._lock)
+		-> true
+	;;
+}
+
+const rwtrywlock = {rw
+	var rc
+	mtxlock(&rw._lock)
+	if rw._state == 0
+		rw._state = Nrmask
+		rc = true
+	else
+		rc = false
+	;;
+	mtxunlock(&rw._lock)
+	-> rc
+}
+
+const rwrunlock = {rw
+	mtxlock(&rw._lock)
+	var prev = rw._state--
+	std.assert(prev & Nrmask != 0, "error: rwlock underflowed\n")
+
+	var writer = Zptr
+	if prev & Nrmask == 1 && prev & Wbit != 0
+		if rw._state == Wbit
+			rw._state = 0
+			if rw._head != Zptr
+				writer = rw._head
+				rw._head = rw._head.next
+				if rw._tail == writer
+					rw._tail = Zptr
+				;;
+			;;
+		;;
+	;;
+	mtxunlock(&rw._lock)
+
+	if writer != Zptr
+		sempost(&writer.sem)
+	;;
+}
+
+const rwwunlock = {rw
+	mtxlock(&rw._lock)
+	if rw._state & Wbit != 0
+		var head = Zptr
+		while (head = rw._head) != Zptr
+			rw._head = head.next
+			sempost(&head.sem)
+		;;
+		rw._tail = Zptr
+	;;
+	rw._state = 0
+	mtxunlock(&rw._lock)
+}
