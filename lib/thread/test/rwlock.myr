@@ -38,12 +38,13 @@ const incvar = {
 }
 
 const read = {
-	for ; ;
+	/* Linux seems to not want to end the process when there are still running threads. */
+	while thread.xget(&done._val) != 0
 		thread.rwrlock(&rw)
 		thread.xadd(&nreaders, 1)
 		std.assert(thread.xget(&nwriters) == 0, "read: rwlocks are broken\n")
 		thread.xadd(&nreaders, -1)
 		thread.rwrunlock(&rw)
-		std.usleep(100_000)
+		std.usleep(1000)
 	;;
 }

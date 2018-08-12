@@ -77,7 +77,9 @@ const rwrunlock = {rw
 	var prev = xadd(&rw._val, -1)
 	std.assert(prev & Nrmask != 0, "error: rwlock value underflowed\n")
 	if prev & Nrmask == 1 && prev & Wbit != 0
-		ftxwake(&rw._val)
+		if xcas(&rw._val, Wbit, 0) == Wbit
+			ftxwake(&rw._val)
+		;;
 	;;
 }
 
