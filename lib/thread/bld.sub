@@ -1,6 +1,8 @@
 lib thread =
 	common.myr
 	hookstd.myr	# install thread hooks
+	tls.myr
+	tls-impl+x64.s
 
 	# higher level apis
 	future.myr

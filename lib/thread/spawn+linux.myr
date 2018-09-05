@@ -1,10 +1,13 @@
 use sys
 use std
 
+use "tls"
+
 pkg thread =
 	type tid = sys.pid
 
-	const spawn : (fn : (-> void) -> std.result(tid, byte[:]))
+	const spawn    : (fn : (-> void) -> std.result(tid, byte[:]))
+	const spawnstk : (fn : (-> void), sz : sys.size -> std.result(tid, byte[:]))
 ;;
 
 extern const exit : (-> void)
@@ -20,53 +23,50 @@ const spawn = {fn
 	-> spawnstk(fn, Stacksz)
 }
 
+/* XXX: do we need to round sz up to align it? */
 const spawnstk = {fn, sz
-	var stk : byte#, tid, ctid, ret
+	var stk, tos, hdr, tid, ctid, ret
 
 	stk = getstk(sz)
 	if stk == sys.Mapbad
 		-> `std.Err "couldn't get stack"
 	;;
-	stk = initstack(stk, fn, Stacksz)
+	(tos, hdr) = initstack(stk, fn, sz)
 
 	ret = sys.fnclone(Thrflag, \
-		(stk : byte#),\
+		tos,\
 		&tid, (0 : byte#), \
 		&ctid, (0 : byte#), \
 		(startthread : void#))
 	if ret < 0
+		/* XXX: leaks? */
 		-> `std.Err "couldn't spawn thread"
 	;;
+	hdr.tid = tid
 	-> `std.Ok (ret : tid)
 }
 
+/* XXX: doesn't this sometimes misalign the stack? */
 const initstack = {stk, fn, sz
-	var tos, szp, fp, env, envsz
+	var tos, hdr, fp, env, envsz
+
+	tos = (stk : std.intptr) + (sz : std.intptr)
+	hdr = ((tos -= sizeof(hdr)) : hdr#)
+	hdr.base = stk
+	hdr.stksz = sz
+	sys.arch_prctl(sys.Archsetfs, (hdr : byte#))
 
 	envsz = std.fnenvsz(fn)
-	tos = (stk : std.intptr)
-	tos -= sizeof(int64)
-	szp = (tos : sys.size#)
-	szp# = sz
 	tos -= (envsz : std.intptr)
 	env = tos
 	tos -= sizeof((->void))
 	fp = (tos : (->void)#)
 	fp# = std.fnbdup(fn, (env : byte#)[:envsz])
-	-> (tos : byte#)
+	-> ((tos : byte#), hdr)
 }
 
 const getstk = {sz
-	var p, m
-
-	p = sys.mmap((0 : byte#), sz, sys.Mprotrw, sys.Mpriv | sys.Manon, -1, 0)
-	if p == sys.Mapbad
-		-> p
-	;;
-	/* stack starts at the top of memory and grows down. */
-	m = (p : std.intptr)
-	m += (sz : std.intptr)
-	-> (m : byte#)
+	-> sys.mmap((0 : byte#), sz, sys.Mprotrw, sys.Mpriv | sys.Manon, -1, 0)
 }
 
 const startthread = {fn : (-> void)

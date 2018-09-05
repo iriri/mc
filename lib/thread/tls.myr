@@ -1,0 +1,15 @@
+use std
+use sys
+
+pkg thread =
+	pkglocal type hdr = struct
+		stksz : sys.size
+		base  : byte#
+		tls   : void#
+		tid   : sys.pid
+	;;
+
+	extern const tid      : (-> sys.pid)
+	extern generic settls : (p : @a# -> void)
+	extern const tls      : (-> void#)
+;;
