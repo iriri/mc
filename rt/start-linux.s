@@ -4,10 +4,15 @@
 sys$__cenvp:
     .quad 0
 
+.globl thread$__maintls
+thread$__maintls:
+    .fill 16
+
 .text
 /*
  * The entry point for the whole program.
  * This is called by the OS. In order, it:
+ *  - Sets up thread local storage for the main thread
  *  - Sets up all argc entries as slices
  *  - Converts argc/argv to a slice
  *  - Stashes a raw envp copy in __cenvp (for syscalls to use)
@@ -15,6 +20,11 @@ sys$__cenvp:
  */
 .globl _start
 _start:
+	movq	$158,%rax		/* arch_prctl */
+	movq	$0x1002,%rdi		/* Archgetfs */
+	leaq	thread$__maintls(%rip),%rsi
+	syscall
+
 	movq	%rsp,%rbp
 	andq	$-16,%rsp		/* align the stack pointer */
 

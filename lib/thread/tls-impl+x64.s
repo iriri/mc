@@ -2,8 +2,8 @@
 .globl _thread$tid
 thread$tid:
 _thread$tid:
-	movq	%fs:0x00, %rax
-	retq
+	movl	%fs:0x00, %eax
+	ret
 
 .globl thread$settls
 .globl _thread$settls

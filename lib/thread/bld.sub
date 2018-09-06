@@ -1,8 +1,6 @@
 lib thread =
 	common.myr
 	hookstd.myr	# install thread hooks
-	tls.myr
-	tls-impl+x64.s
 
 	# higher level apis
 	future.myr
@@ -66,6 +64,8 @@ lib thread =
 
 	atomic-impl+x64.s
 	atomic.myr
+	tls.myr
+	tls-impl+x64.s
 
         lib ../sys:sys
         lib ../std:std

@@ -7,6 +7,7 @@ set -x
 	as -g -o mbld/cpufeatures.o mbld/cpufeatures+posixy-x64.s
 	as -g -o lib/thread/exit.o lib/thread/exit+linux-x64.s
 	as -g -o lib/thread/atomic-impl.o lib/thread/atomic-impl+x64.s
+	as -g -o lib/thread/tls-impl.o lib/thread/tls-impl+x64.s
 	as -g -o lib/std/getbp.o lib/std/getbp+posixy-x64.s
 	$pwd/6/6m -I lib/sys lib/std/option.myr
 	$pwd/6/6m -I lib/sys lib/std/traits.myr
@@ -124,12 +125,13 @@ set -x
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/ncpu+linux.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/common.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/atomic.myr
+	$pwd/6/6m -I lib/sys -I lib/std lib/thread/tls.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/futex+linux.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/sem.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/mutex.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/hookstd.myr
-	ar -rcs lib/thread/libthread.a lib/thread/mutex.o lib/thread/atomic.o lib/thread/atomic-impl.o lib/thread/hookstd.o lib/thread/sem.o lib/thread/common.o lib/thread/ncpu.o lib/thread/exit.o lib/thread/futex.o lib/thread/spawn.o
-	$pwd/muse/muse -o lib/thread/libthread.use -p thread lib/thread/mutex.use lib/thread/atomic.use lib/thread/hookstd.use lib/thread/sem.use lib/thread/common.use lib/thread/ncpu.use lib/thread/futex.use lib/thread/spawn.use
+	ar -rcs lib/thread/libthread.a lib/thread/mutex.o lib/thread/atomic.o lib/thread/atomic-impl.o lib/thread/tls.o lib/thread/tls-impl.o lib/thread/hookstd.o lib/thread/sem.o lib/thread/common.o lib/thread/ncpu.o lib/thread/exit.o lib/thread/futex.o lib/thread/spawn.o
+	$pwd/muse/muse -o lib/thread/libthread.use -p thread lib/thread/mutex.use lib/thread/atomic.use lib/thread/tls.use lib/thread/hookstd.use lib/thread/sem.use lib/thread/common.use lib/thread/ncpu.use lib/thread/futex.use lib/thread/spawn.use
 	$pwd/6/6m -I lib/sys -I lib/std -I lib/bio -I lib/regex -I lib/thread mbld/opts.myr
 	$pwd/6/6m -I lib/sys -I lib/std -I lib/bio -I lib/regex -I lib/thread mbld/syssel.myr
 	$pwd/6/6m -I lib/sys -I lib/std -I lib/bio -I lib/regex -I lib/thread mbld/libs.myr

@@ -6,7 +6,8 @@ pkg thread =
 		stksz : sys.size
 		base  : byte#
 		tls   : void#
-		tid   : sys.pid
+		pad   : uint32  /* unused, for now */
+		tid   : sys.pid /* assumed to be 32 bits */
 	;;
 
 	extern const tid      : (-> sys.pid)

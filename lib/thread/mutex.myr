@@ -6,7 +6,6 @@ use "atomic"
 pkg thread =
 	type mutex = struct
 		_state	: uint32
-		_owner	: sys.pid
 	;;	
 
 	const mkmtx	: (-> mutex)
