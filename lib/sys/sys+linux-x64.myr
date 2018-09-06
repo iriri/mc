@@ -1316,7 +1316,7 @@ pkg sys =
 	const settimeofday		:  (tv : timeval#, tz : timezone# -> int64)
 	const adjtimex			:  (txc_p : timex# -> int64)
 	const times			:  (tbuf : tms# -> int64)
-	const gettid			:  ( -> int64)
+	const gettid			:  ( -> pid)
 	const alarm			:  (seconds : uint -> int64)
 	const getppid			:  ( -> int64)
 	const geteuid			:  ( -> int64)
@@ -1791,7 +1791,7 @@ const times	= {tbuf
 	 -> (syscall(Systimes, a(tbuf)) : int64)
 }
 const gettid	= {
-	 -> (syscall(Sysgettid) : int64)
+	 -> (syscall(Sysgettid) : pid)
 }
 const alarm	= {seconds
 	 -> (syscall(Sysalarm, a(seconds)) : int64)

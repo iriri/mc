@@ -43,8 +43,6 @@ const spawnstk = {fn, sz
 		/* XXX: leaks? */
 		-> `std.Err "couldn't spawn thread"
 	;;
-	/* XXX: massive race condition lol */
-	hdr.tid = tid
 	-> `std.Ok (ret : tid)
 }
 
@@ -57,6 +55,8 @@ const initstack = {stk, fn, sz
 	hdr.stksz = sz
 
 	var fn1 = {
+		/* TODO: consider using the low 32 of `base` instead */
+		hdr.tid = sys.gettid()
 		sys.arch_prctl(sys.Archsetfs, (hdr : void#))
 		fn()
 	}
