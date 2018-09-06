@@ -23,15 +23,16 @@ const spawn = {fn
 	-> spawnstk(fn, Stacksz)
 }
 
-/* XXX: do we need to round sz up to align it? */
 const spawnstk = {fn, sz
 	var stk, tos, hdr, tid, ctid, ret
 
+	/* TODO: is there a pagesz const somewhere? */
+	sz = (sz + 0xfff) & ~0xfff
 	stk = getstk(sz)
 	if stk == sys.Mapbad
 		-> `std.Err "couldn't get stack"
 	;;
-	(tos, hdr) = initstack(stk, fn, sz)
+	(tos, fn, hdr) = initstack(stk, fn, sz)
 
 	ret = sys.fnclone(Thrflag, \
 		tos,\
@@ -42,11 +43,11 @@ const spawnstk = {fn, sz
 		/* XXX: leaks? */
 		-> `std.Err "couldn't spawn thread"
 	;;
+	/* XXX: massive race condition lol */
 	hdr.tid = tid
 	-> `std.Ok (ret : tid)
 }
 
-/* XXX: doesn't this sometimes misalign the stack? */
 const initstack = {stk, fn, sz
 	var tos, hdr, fp, env, envsz
 
@@ -54,15 +55,19 @@ const initstack = {stk, fn, sz
 	hdr = ((tos -= sizeof(hdr)) : hdr#)
 	hdr.base = stk
 	hdr.stksz = sz
-	sys.arch_prctl(sys.Archsetfs, (hdr : byte#))
 
-	envsz = std.fnenvsz(fn)
+	var fn1 = {
+		sys.arch_prctl(sys.Archsetfs, (hdr : void#))
+		fn()
+	}
+
+	envsz = std.fnenvsz(fn1)
 	tos -= (envsz : std.intptr)
 	env = tos
 	tos -= sizeof((->void))
 	fp = (tos : (->void)#)
-	fp# = std.fnbdup(fn, (env : byte#)[:envsz])
-	-> ((tos : byte#), hdr)
+	fp# = std.fnbdup(fn1, (env : byte#)[:envsz])
+	-> ((tos : byte#), fn1, hdr)
 }
 
 const getstk = {sz

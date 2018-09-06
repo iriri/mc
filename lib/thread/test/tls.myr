@@ -1,0 +1,37 @@
+use std
+use sys
+use thread
+
+var wg
+
+const inittls = {
+	var ht : std.htab(int, sys.pid)# = std.mkht()
+	thread.settls((ht : void#))
+}
+
+const tls = {
+	-> (thread.tls() : std.htab(int, sys.pid)#)
+}
+
+const main = {
+	wg = thread.mkwg(2)
+	inittls()
+	std.htput(tls(), 0, thread.tid())
+	std.put("{}\n", std.htget(tls(), 0))
+	std.htfree(tls())
+	thread.spawn({
+		inittls()
+		std.htput(tls(), 0, thread.tid())
+		std.put("{}\n", std.htget(tls(), 0))
+		std.htfree(tls())
+		thread.wgpost(&wg)
+	})
+	thread.spawn({
+		inittls()
+		std.htput(tls(), 0, thread.tid())
+		std.put("{}\n", std.htget(tls(), 0))
+		std.htfree(tls())
+		thread.wgpost(&wg)
+	})
+	thread.wgwait(&wg)
+}

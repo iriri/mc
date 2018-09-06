@@ -1492,7 +1492,7 @@ pkg sys =
 	const mq_notify			:  (mqdes : int, notification : sigevent# -> int64)
 	const mq_getsetattr		:  (mqdes : int, mqstat : mq_attr#, omqstat : mq_attr# -> int64)
 	const prctl			:  (option : int, arg2 : uint64, arg3 : uint64, arg4 : uint64, arg5 : uint64 -> int64)
-	const arch_prctl		:  (op : arch_prctlop, addr : byte# -> int64)
+	const arch_prctl		:  (op : arch_prctlop, addr : void# -> int64)
 	const swapon			:  (specialfile : byte#, swap_flags : int -> int64)
 	const swapoff			:  (specialfile : byte# -> int64)
 	const _sysctl			:  (args : sysctl_args# -> int64)
