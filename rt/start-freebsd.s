@@ -40,10 +40,8 @@ _start:
 	call	cvt
 
 	/* XXX: uhh */
-	movq	$165,%rax		/* arch_prctl */
-	movq	$129,%rdi		/* Archamd64setfs */
-	leaq	thread$__tmpmaintls(%rip),%rsi
-	syscall
+	movq		thread$__tmpmaintls(%rip),%rdi
+	wrfsbaseq	%rdi
 
 	xorq %rbp,%rbp
 	/* call pre-main initializers */

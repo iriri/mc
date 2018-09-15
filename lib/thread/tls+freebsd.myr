@@ -12,12 +12,13 @@ pkg thread =
 	generic tlsset    : (k : key, v : @a# -> void)
 	generic tlsget    : (k : key -> @a#)
 
-	extern const tid     : (-> tid)
-	extern const _tlsset : (k : key, v : void# -> void)
-	extern const _tlsget : (k : key -> void#)
+	extern const tid      : (-> tid)
+	extern const _tlsset  : (k : key, v : void# -> void)
+	extern const _tlsget  : (k : key -> void#)
+	extern const wrfsbase : (p : byte# -> void)
 
 	pkglocal type hdr = struct
-		tid   : sys.pid /* must be 32 bits */
+		tid   : tid /* must be 32 bits */
 		pad   : uint32  /* unused; could become stksz? */
 		base  : byte#
 		slots : void#[...]
@@ -32,7 +33,7 @@ var tlsmain : hdr#
 
 const __init__ = {
 	tlsmain = (std.bytealloc(sizeof(hdr) + (8 * sizeof(void#))) : hdr#)
-	sys.sysarch(sys.Archamd64setfs, (tlsmain : byte#))
+	wrfsbase((tlsmain : byte#))
 	tlsmain.tid = 0
 }
 
@@ -43,7 +44,7 @@ const tlssetcap = {cap
 	std.assert(!spawned, "error: tls capacity must be set before threads are spawned\n")
 	std.bytefree((tlsmain : byte#), (tlscap : std.size) * sizeof(void#))
 	tlsmain = (std.bytealloc(sizeof(hdr) + ((cap : std.size) * sizeof(void#))) : hdr#)
-	sys.sysarch(sys.Archamd64setfs, (tlsmain : byte#))
+	wrfsbase((tlsmain : byte#))
 	tlsmain.tid = 0
 	tlscap = cap
 }

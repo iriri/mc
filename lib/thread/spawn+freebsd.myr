@@ -55,7 +55,7 @@ const initstk = {stk, fn, sz
 	hdr.base = stk
 
 	var fn1 = {
-		sys.sysarch(sys.Archamd64setfs, (hdr : byte#))
+		wrfsbase((hdr : byte#))
 		fn()
 	}
 

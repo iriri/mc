@@ -17,7 +17,7 @@ pkg thread =
 	extern const _tlsget : (k : key -> void#)
 
 	pkglocal type hdr = struct
-		tid   : sys.pid /* must be 32 bits */
+		tid   : tid /* must be 32 bits */
 		pad   : uint32  /* unused; could become stksz? */
 		base  : byte#
 		slots : void#[...]

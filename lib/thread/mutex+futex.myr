@@ -32,6 +32,11 @@ const mkmtx = {
 const mtxlock = {mtx
 	var c
 
+	if mtx._owner == tid()
+		/* TODO: report an error here */
+		std.suicide()
+	;;
+
 	/*
 	Uncontended case: we get an unlocked mutex, and we lock it.
 	*/
@@ -75,9 +80,11 @@ const mtxunlock = {mtx
 	mtx._owner doesn't seem worth it.
 	*/
 	if mtx._owner != tid()
+		/* XXX: put allocates, which locks and unlocks, so...
 		std.fput(std.Err,
 			"error: thread {} attempted to unlock a mutex last held by {}\n",
 			tid(), mtx._owner)
+		*/
 		std.suicide()
 	;;
 	mtx._owner = -1
@@ -96,6 +103,11 @@ const mtxunlock = {mtx
 }
 
 const mtxcontended = {mtx
+	if mtx._owner == tid()
+		/* TODO: report an error here */
+		std.suicide()
+	;;
+
 	while xchg(&mtx._state, Contended) != Unlocked
 		ftxwait(&mtx._state, Contended, -1)
 	;;

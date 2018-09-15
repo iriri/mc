@@ -22,3 +22,10 @@ _thread$_tlsget:
 	movq	$16, %r10
 	movq	%fs:(%r10, %rdi, 8), %rax
 	ret
+
+.globl thread$wrfsbase
+.globl _thread$wrfsbase
+thread$wrfsbase:
+_thread$wrfsbase:
+	wrfsbaseq	%rdi
+	ret
