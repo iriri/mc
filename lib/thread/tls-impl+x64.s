@@ -10,13 +10,12 @@ _thread$tid:
 .globl _thread$_tlsset
 thread$_tlsset:
 _thread$_tlsset:
+	movslq	%edi, %rdi
 	movq	$0x10000000000000, %r10
 	cmpq	%r10, %rsp
 	jb	setnotmain
 
 	movq	_thread$tlsmain(%rip), %r11
-setret:
-	movslq	%edi, %rdi
 	movq	%rsi, (%r11, %rdi, 8)
 	ret
 
@@ -25,19 +24,19 @@ setnotmain:
 	andq	$~0xffffff, %r11
 	addq	$0x800000, %r11
 	subq	_thread$tlscap(%rip), %r11
-	jmp	setret
+	movq	%rsi, (%r11, %rdi, 8)
+	ret
 
 .globl thread$_tlsget
 .globl _thread$_tlsget
 thread$_tlsget:
 _thread$_tlsget:
+	movslq	%edi, %rdi
 	movq	$0x10000000000000, %r10
 	cmpq	%r10, %rsp
 	jb	getnotmain
 
 	movq	_thread$tlsmain(%rip), %r11
-getret:
-	movslq	%edi, %rdi
 	movq	(%r11, %rdi, 8), %rax
 	ret
 
@@ -46,4 +45,5 @@ getnotmain:
 	andq	$~0xffffff, %r11
 	addq	$0x800000, %r11
 	subq	_thread$tlscap(%rip), %r11
-	jmp	getret
+	movq	(%r11, %rdi, 8), %rax
+	ret

@@ -19,10 +19,10 @@ const thread.exit	: (stacksz : std.size -> void)
 .globl _thread$exit
 _thread$exit:
 	/* munmap(base, size) */
+	movq	$0x2000049,%rax	/* munmap */
 	movq	%rbp,%rdi
 	andq	$~0xffffff,%rdi	/* base*/
 	movq	$0x800000,%rsi	/* size */
-	movq	$0x2000049,%rax	/* munmap */
 	syscall
 
 	/* exit the thread */

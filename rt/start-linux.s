@@ -4,6 +4,10 @@
 sys$__cenvp:
     .quad 0
 
+.globl thread$__tmpmaintls
+thread$__tmpmaintls:
+    .quad 0
+
 .text
 /*
  * The entry point for the whole program.
@@ -36,6 +40,12 @@ _start:
 	pushq	%rax
 	pushq	%rcx
 	call	cvt
+
+	/* XXX: uhh */
+	movq	$158,%rax		/* arch_prctl */
+	movq	$0x1002,%rdi		/* Archgetfs */
+	leaq	thread$__tmpmaintls(%rip),%rsi
+	syscall
 
 	xorq %rbp,%rbp
 	/* call pre-main initializers */

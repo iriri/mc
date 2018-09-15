@@ -10,13 +10,15 @@ _thread$tid:
 thread$tlsset:
 _thread$tlsset:
 	movslq	%edi, %rdi
-	movq	%rsi, %fs:16(, %rdi, 8)
-	retq
+	movq	$16, %r10
+	movq	%rsi, %fs:(%r10, %rdi, 8)
+	ret
 
 .globl thread$tlsget
 .globl _thread$tlsget
 thread$tlsget:
 _thread$tlsget:
 	movslq	%edi, %rdi
-	movq	$fs:16(, %rdi, 8), %rax
-	retq
+	movq	$16, %r10
+	movq	%fs:(%r10, %rdi, 8), %rax
+	ret

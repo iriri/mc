@@ -24,7 +24,7 @@ pkg thread =
 	;;
 
 	pkglocal var tlscap  : uint32 = 8
-	pkglocal var tlsmain : void## = (0 : void##) /* doesn't link unless this is initialized */
+	pkglocal var tlsmain : hdr# = (0 : hdr#) /* doesn't link unless this is initialized */
 	pkglocal var spawned = false
 ;;
 
@@ -36,7 +36,8 @@ const tlssetcap = {cap
 	std.assert(cap <= 1024, "error: cannot have more than 1024 tls slots\n")
 	std.assert(!spawned, "error: tls capacity must be set before threads are spawned\n")
 	std.bytefree((tlsmain : byte#), (tlscap : std.size) * sizeof(void#))
-	tlsmain = (std.bytealloc(sizeof(hdr) + ((cap : std.size) * sizeof(void#))) : void##)
+	tlsmain = (std.bytealloc(sizeof(hdr) + ((cap : std.size) * sizeof(void#))) : hdr#)
+	tlsmain.tid = 0
 	tlscap = cap
 }
 

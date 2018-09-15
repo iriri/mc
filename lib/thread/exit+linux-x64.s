@@ -5,8 +5,8 @@ const thread.exit : (-> void)
 thread$exit:
 	/* munmap(base, size) */
 	movq	$11,%rax	/* munmap */
-	movq	%fs:0x10,%rdi	/* base */
-	movq	%fs:0x18,%rsi	/* stksz */
+	movq	%fs:0x8,%rdi	/* base */
+	movq	$0x800000,%rsi	/* stksz */
 	syscall
 
 	/* thread_exit(0) */

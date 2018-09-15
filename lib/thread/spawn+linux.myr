@@ -11,7 +11,8 @@ const Stacksz = 8*std.MiB
 extern const exit : (-> void)
 
 const __init__ = {
-	tlsmain = (std.bytealloc(sizeof(hdr) + (8 * sizeof(void#))) : void##)
+	tlsmain = (std.bytealloc(sizeof(hdr) + (8 * sizeof(void#))) : hdr#)
+	tlsmain.tid = 0
 	sys.arch_prctl(sys.Archsetfs, (tlsmain : void#))
 }
 
@@ -50,7 +51,7 @@ const spawnstk = {fn, sz
 const initstack = {stk, fn, sz
 	var tos, hdr, fp, env, envsz
 
-	tos = (stk : std.intptr) + (sz : std.intptr) - (tlscap * sizeof(void#))
+	tos = (stk : std.intptr) + (sz : std.intptr) - ((tlscap * sizeof(void#)) : std.intptr)
 	hdr = ((tos -= sizeof(hdr)) : hdr#)
 	hdr.base = stk
 
