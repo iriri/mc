@@ -4,20 +4,21 @@ use std
 use "tls"
 
 pkg thread =
-	type tid = sys.tid
-
 	const spawn    : (fn : (-> void) -> std.result(tid, byte[:]))
-	const spawnstk : (fn : (-> void), sz : sys.size -> std.result(tid, byte[:]))
 ;;
 
+const Stacksz = 8*std.MiB
 extern const exit : (-> void)
+
+const __init__ = {
+	tlsmain = (sizeof(hdr) + std.bytealloc(8 * sizeof(void#)) : void##)
+	sys.arch_prctl(sys.Archsetfs, (tlsmain : void#))
+}
 
 /* Holy shit flag mania. */
 const Thrflag = sys.Clonevm | sys.Clonefs | sys.Clonefiles  | \
 	sys.Clonesighand | sys.Clonethread |sys.Clonesysvsem | \
 	sys.Clonesettls | sys.Cloneparentsettid | sys.Clonechildcleartid
-
-const Stacksz = 8*std.MiB
 
 const spawn = {fn
 	-> spawnstk(fn, Stacksz)
@@ -49,10 +50,9 @@ const spawnstk = {fn, sz
 const initstack = {stk, fn, sz
 	var tos, hdr, fp, env, envsz
 
-	tos = (stk : std.intptr) + (sz : std.intptr)
+	tos = (stk : std.intptr) + (sz : std.intptr) - (tlscap * sizeof(void#))
 	hdr = ((tos -= sizeof(hdr)) : hdr#)
 	hdr.base = stk
-	hdr.stksz = sz
 
 	var fn1 = {
 		/* TODO: consider using the low 32 of `base` instead */

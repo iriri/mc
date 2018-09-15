@@ -14,6 +14,10 @@ extern const exit : (-> void)
 
 var stkbase : std.intptr = 0x10_0000_0000
 
+const __init__ = {
+	tlsmain = (std.bytealloc(8 * sizeof(void#)) : void##)
+}
+
 const spawn = {fn
 	-> spawnstk(fn, Stacksz)
 }

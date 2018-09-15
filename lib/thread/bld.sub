@@ -66,6 +66,8 @@ lib thread =
 	atomic.myr
 	tls.myr
 	tls-impl+x64.s
+	tls+linux.myr
+	tls-impl+linux-x64.s
 
         lib ../sys:sys
         lib ../std:std
