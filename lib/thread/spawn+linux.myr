@@ -11,7 +11,7 @@ const Stacksz = 8*std.MiB
 extern const exit : (-> void)
 
 const __init__ = {
-	tlsmain = (sizeof(hdr) + std.bytealloc(8 * sizeof(void#)) : void##)
+	tlsmain = (std.bytealloc(sizeof(hdr) + (8 * sizeof(void#))) : void##)
 	sys.arch_prctl(sys.Archsetfs, (tlsmain : void#))
 }
 

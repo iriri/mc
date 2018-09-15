@@ -10,7 +10,7 @@ _thread$tid:
 thread$tlsset:
 _thread$tlsset:
 	movslq	%edi, %rdi
-	movq	%rsi, 16(%fs, %rdi, 8)
+	movq	%rsi, %fs:16(, %rdi, 8)
 	retq
 
 .globl thread$tlsget
@@ -18,5 +18,5 @@ _thread$tlsset:
 thread$tlsget:
 _thread$tlsget:
 	movslq	%edi, %rdi
-	movq	16(%fs, %rdi, 8), %rax
+	movq	$fs:16(, %rdi, 8), %rax
 	retq

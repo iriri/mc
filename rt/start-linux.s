@@ -4,10 +4,6 @@
 sys$__cenvp:
     .quad 0
 
-.globl thread$__maintls
-thread$__maintls:
-    .fill 16
-
 .text
 /*
  * The entry point for the whole program.
@@ -20,11 +16,6 @@ thread$__maintls:
  */
 .globl _start
 _start:
-	movq	$158,%rax		/* arch_prctl */
-	movq	$0x1002,%rdi		/* Archgetfs */
-	leaq	thread$__maintls(%rip),%rsi
-	syscall
-
 	movq	%rsp,%rbp
 	andq	$-16,%rsp		/* align the stack pointer */
 

@@ -36,7 +36,7 @@ const tlssetcap = {cap
 	std.assert(cap <= 1024, "error: cannot have more than 1024 tls slots\n")
 	std.assert(!spawned, "error: tls capacity must be set before threads are spawned\n")
 	std.bytefree((tlsmain : byte#), (tlscap : std.size) * sizeof(void#))
-	tlsmain = (sizeof(hdr) + std.bytealloc((cap : std.size) * sizeof(void#)) : void##)
+	tlsmain = (std.bytealloc(sizeof(hdr) + ((cap : std.size) * sizeof(void#))) : void##)
 	tlscap = cap
 }
 
