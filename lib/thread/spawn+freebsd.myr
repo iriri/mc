@@ -1,7 +1,7 @@
 use sys
 use std
 
-use "atomic"
+use "common"
 use "tls"
 
 pkg thread =
@@ -14,24 +14,19 @@ extern const exit : (-> void)
 
 var stkbase : std.intptr = 0x10_0000_0000
 
-const __init__ = {
-	tlsmain = (std.bytealloc(sizeof(hdr) + (8 * sizeof(void#))) : hdr#)
-	sys.sysarch(sys.Archamd64setfs, (tlsmain : byte#))
-	tlsmain.tid = 0
-}
-
 const spawn = {fn
 	-> spawnstk(fn, Stacksz)
 }
 
 const spawnstk = {fn, sz
-	var stk : byte#, tos, hdr, tid, ret
+	var stk : byte#, tos, hdr, ret
 
+	spawned = true
 	stk = getstk(sz)
 	if stk == sys.Mapbad
 		-> `std.Err "couldn't get stack"
 	;;
-	(tos, fn, hdr) = initstk(stk, fn, sz)
+	(tos, sz, hdr) = initstk(stk, fn, sz)
 
 	ret = sys.thr_new(&[
 		.startfn = (startthread : void#),
@@ -39,22 +34,24 @@ const spawnstk = {fn, sz
 		.stkbase = (stk : byte#),
 		.stksz = sz,
 		.tid = (&hdr.tid : uint64#), // XXX: UHHHHH
-		.ptid = &tid,
+		.ptid = Zptr,
 		.flags = 2,
-		.rtp = (0 : sys.rtprio#)
+		.rtp = Zptr,
 	], sizeof(sys.thrparam))
 
 	if ret < 0
 		-> `std.Err "couldn't spawn thread"
 	;;
-	-> `std.Ok (tid : tid)
+	-> `std.Ok (ret : tid)
 }
 
 const initstk = {stk, fn, sz
 	var tos, hdr, fp, env, envsz
 
-	tos = (stk : std.intptr) + (sz : std.intptr) - ((tlscap * sizeof(void#)) : std.intptr)
-	hdr = ((tos -= sizeof(hdr)) : hdr#)
+	tos = (stk : std.intptr) + (sz : std.intptr)
+	tos -= sizeof(hdr) + ((tlscap * sizeof(void#)) : std.intptr)
+	sz -= sizeof(hdr) + ((tlscap * sizeof(void#)) : sys.size)
+	hdr = (tos : hdr#)
 	hdr.base = stk
 
 	var fn1 = {
@@ -64,11 +61,13 @@ const initstk = {stk, fn, sz
 
 	envsz = std.fnenvsz(fn1)
 	tos -= (envsz : std.intptr)
+	sz -= (envsz : sys.size)
 	env = tos
 	tos -= sizeof((->void))
+	sz -= sizeof((->void))
 	fp = (tos : (->void)#)
 	fp# = std.fnbdup(fn1, (env : byte#)[:envsz])
-	-> ((tos : byte#), fn1, hdr)
+	-> ((tos : byte#), sz, hdr)
 }
 
 const getstk = {sz

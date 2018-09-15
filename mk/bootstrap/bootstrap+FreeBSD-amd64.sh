@@ -123,9 +123,9 @@ set -x
 	$pwd/muse/muse -o lib/bio/libbio.use -p bio lib/bio/puti.use lib/bio/geti.use lib/bio/fd.use lib/bio/mem.use lib/bio/bio.use lib/bio/types.use lib/bio/iter.use
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/atomic.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/tls+freebsd.myr
+	$pwd/6/6m -I lib/sys -I lib/std lib/thread/common.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/spawn+freebsd.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/ncpu+freebsd.myr
-	$pwd/6/6m -I lib/sys -I lib/std lib/thread/common.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/futex+freebsd.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/sem.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/mutex.myr

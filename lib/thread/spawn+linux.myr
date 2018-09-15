@@ -1,6 +1,7 @@
 use sys
 use std
 
+use "common"
 use "tls"
 
 pkg thread =
@@ -10,63 +11,54 @@ pkg thread =
 const Stacksz = 8*std.MiB
 extern const exit : (-> void)
 
-const __init__ = {
-	tlsmain = (std.bytealloc(sizeof(hdr) + (8 * sizeof(void#))) : hdr#)
-	sys.arch_prctl(sys.Archsetfs, (tlsmain : void#))
-	tlsmain.tid = 0
-}
-
 /* Holy shit flag mania. */
-const Thrflag = sys.Clonevm | sys.Clonefs | sys.Clonefiles  | \
-	sys.Clonesighand | sys.Clonethread |sys.Clonesysvsem | \
-	sys.Clonesettls | sys.Cloneparentsettid | sys.Clonechildcleartid
+const Thrflag = sys.Clonevm | sys.Clonefs | sys.Clonefiles | \
+	sys.Clonesighand | sys.Clonethread | sys.Clonesettls | \
+	sys.Clonechildsettid
 
 const spawn = {fn
 	-> spawnstk(fn, Stacksz)
 }
 
 const spawnstk = {fn, sz
-	var stk, tos, hdr, tid, ret
+	var stk, tos, hdr, ret
 
-	/* TODO: is there a pagesz const somewhere? */
-	sz = (sz + 0xfff) & ~0xfff
+	spawned = true
 	stk = getstk(sz)
 	if stk == sys.Mapbad
 		-> `std.Err "couldn't get stack"
 	;;
-	(tos, fn, hdr) = initstk(stk, fn, sz)
+	(tos, hdr) = initstk(stk, fn, sz)
 
-	ret = sys.fnclone(Thrflag, \
-		tos,\
-		&tid, (0 : byte#), \
-		(&hdr.tid : sys.pid#), (0 : byte#), \
+	ret = sys.fnclone(Thrflag,
+		tos,
+		Zptr,
+		(hdr : byte#),
+		(&hdr.tid : sys.pid#),
+		Zptr,
 		(startthread : void#))
 	if ret < 0
 		/* XXX: leaks? */
 		-> `std.Err "couldn't spawn thread"
 	;;
-	-> `std.Ok (tid : tid)
+	-> `std.Ok (ret : tid)
 }
 
 const initstk = {stk, fn, sz
 	var tos, hdr, fp, env, envsz
 
-	tos = (stk : std.intptr) + (sz : std.intptr) - ((tlscap * sizeof(void#)) : std.intptr)
-	hdr = ((tos -= sizeof(hdr)) : hdr#)
+	tos = (stk : std.intptr) + (sz : std.intptr)
+	tos -= sizeof(hdr) + ((tlscap * sizeof(void#)) : std.intptr)
+	hdr = (tos : hdr#)
 	hdr.base = stk
 
-	var fn1 = {
-		sys.arch_prctl(sys.Archsetfs, (hdr : void#))
-		fn()
-	}
-
-	envsz = std.fnenvsz(fn1)
+	envsz = std.fnenvsz(fn)
 	tos -= (envsz : std.intptr)
 	env = tos
 	tos -= sizeof((->void))
 	fp = (tos : (->void)#)
-	fp# = std.fnbdup(fn1, (env : byte#)[:envsz])
-	-> ((tos : byte#), fn1, hdr)
+	fp# = std.fnbdup(fn, (env : byte#)[:envsz])
+	-> ((tos : byte#), hdr)
 }
 
 const getstk = {sz

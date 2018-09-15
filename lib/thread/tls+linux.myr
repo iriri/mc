@@ -24,11 +24,17 @@ pkg thread =
 	;;
 
 	pkglocal var tlscap  : uint32 = 8
-	pkglocal var tlsmain : hdr# = (0 : hdr#) /* doesn't link unless this is initialized */
 	pkglocal var spawned = false
 ;;
 
 var tlslen : uint32 = 0
+var tlsmain : hdr#
+
+const __init__ = {
+	tlsmain = (std.bytealloc(sizeof(hdr) + (8 * sizeof(void#))) : hdr#)
+	sys.arch_prctl(sys.Archsetfs, (tlsmain : void#))
+	tlsmain.tid = 0
+}
 
 const tlssetcap = {cap
 	cap = cap + 1 & ~0x1
