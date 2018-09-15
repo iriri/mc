@@ -38,7 +38,7 @@ const spawnstk = {fn, sz
 		.arg = (tos : void#),
 		.stkbase = (stk : byte#),
 		.stksz = sz,
-		.tid = (&hdr.tid : uint32#),
+		.tid = (&hdr.tid : uint64#), // XXX: UHHHHH
 		.ptid = &tid,
 		.flags = 2,
 		.rtp = (0 : sys.rtprio#)
@@ -58,7 +58,7 @@ const initstk = {stk, fn, sz
 	hdr.base = stk
 
 	var fn1 = {
-		sys.arch_prctl(sys.Archsetfs, (hdr : void#))
+		sys.sysarch(sys.Archamd64setfs, (hdr : byte#))
 		fn()
 	}
 
