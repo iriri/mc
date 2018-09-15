@@ -2,36 +2,24 @@ use std
 use sys
 use thread
 
+var key
 var wg
 
-const inittls = {
-	var ht : std.htab(int, sys.pid)# = std.mkht()
-	thread.settls((ht : void#))
-}
-
-const tls = {
-	-> (thread.tls() : std.htab(int, sys.pid)#)
+const foo = {
+	thread.tlsset(key, (thread.tid() : void#))
+	var p : void# = thread.tlsget(key)
+	std.put("{}\n", p)
+	thread.wgpost(&wg)
 }
 
 const main = {
-	wg = thread.mkwg(2)
-	inittls()
-	std.htput(tls(), 0, thread.tid())
-	std.put("{}\n", std.htget(tls(), 0))
-	std.htfree(tls())
-	thread.spawn({
-		inittls()
-		std.htput(tls(), 0, thread.tid())
-		std.put("{}\n", std.htget(tls(), 0))
-		std.htfree(tls())
-		thread.wgpost(&wg)
-	})
-	thread.spawn({
-		inittls()
-		std.htput(tls(), 0, thread.tid())
-		std.put("{}\n", std.htget(tls(), 0))
-		std.htfree(tls())
-		thread.wgpost(&wg)
-	})
+	key = thread.tlsreg()
+	wg = thread.mkwg(4)
+
+	foo()
+	thread.spawn(foo)
+	thread.spawn(foo)
+	thread.spawn(foo)
+
 	thread.wgwait(&wg)
 }

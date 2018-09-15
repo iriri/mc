@@ -8,7 +8,7 @@ use "tls"
 pkg thread =
 	type mutex = struct
 		_state	: ftxtag
-		_owner	: sys.pid
+		_owner	: tid
 	;;	
 
 	const mkmtx	: (-> mutex)

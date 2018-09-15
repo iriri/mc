@@ -4,7 +4,7 @@ use std
 use "tls"
 
 pkg thread =
-	type tid = sys.pid
+	type tid = sys.tid
 
 	const spawn    : (fn : (-> void) -> std.result(tid, byte[:]))
 	const spawnstk : (fn : (-> void), sz : sys.size -> std.result(tid, byte[:]))

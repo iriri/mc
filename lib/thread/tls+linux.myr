@@ -1,0 +1,16 @@
+use std
+use sys
+
+pkg thread =
+	pkglocal type hdr = struct
+		tid   : sys.pid /* must be 32 bits */
+		pad   : uint32  /* unused, for now */
+		tls   : void#
+		base  : byte#
+		stksz : sys.size
+	;;
+
+	extern const tid    : (-> sys.pid)
+	extern const settls : (p : void# -> void)
+	extern const tls    : (-> void#)
+;;

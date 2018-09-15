@@ -1,16 +1,48 @@
 use std
-use sys
+
+use "atomic"
 
 pkg thread =
-	pkglocal type hdr = struct
-		tid   : sys.pid /* must be 32 bits */
-		pad   : uint32  /* unused, for now */
-		tls   : void#
-		base  : byte#
-		stksz : sys.size
-	;;
+	type tid = uint32
+	type key = uint32
 
-	extern const tid    : (-> sys.pid)
-	extern const settls : (p : void# -> void)
-	extern const tls    : (-> void#)
+	const   tlssetcap : (cap : uint32 -> void)
+	const   tlsreg    : (-> key)
+	generic tlsset    : (k : key, v : @a# -> void)
+	generic tlsget    : (k : key -> @a#)
+
+	extern const tid     : (-> tid)
+	extern const _tlsset : (k : key, v : void# -> void)
+	extern const _tlsget : (k : key -> void#)
+
+	pkglocal var tlscap  : uint32 = 8
+	pkglocal var tlsmain : void## = (0 : void##) /* doesn't link unless this is initialized */
+	pkglocal var spawned = false
 ;;
+
+var tlslen : uint32 = 0
+
+const tlssetcap = {cap
+	/* Arbitarily chosen for now. `stksz` is currently fixed to 8MiB but... */
+	std.assert(cap <= 1024, "error: cannot have more than 1024 tls slots\n")
+	std.assert(!spawned, "error: tls capacity must be set before threads are spawned\n")
+	std.bytefree((tlsmain : byte#), (tlscap : std.size) * sizeof(void#))
+	tlsmain = (std.bytealloc((cap : std.size) * sizeof(void#)) : void##)
+	tlscap = cap
+}
+
+const tlsreg = {
+	var k = xadd(&tlslen, 1)
+	std.assert(k < tlscap, "error: tls capacity exceeded\n")
+	-> (k : key)
+}
+
+generic tlsset = {k, v
+	std.assert((k : uint32) < tlslen, "error: tls index out of bounrs\n")
+	_tlsset(k, (v : void#))
+}
+
+generic tlsget = {k
+	std.assert((k : uint32) < tlslen, "error: tls index out of bounrs\n")
+	-> (_tlsget(k) : @a#)
+}

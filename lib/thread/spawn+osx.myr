@@ -1,16 +1,18 @@
 use sys
 use std
 
-pkg thread =
-	type tid = uint64
+use "atomic"
+use "tls"
 
+pkg thread =
 	const spawn : (fn : (-> void) -> std.result(tid, byte[:]))
 ;;
 
-
-const Stacksz = 8*std.MiB
 extern const exit : (-> void)
 extern const start : (-> void)
+
+const Stacksz = 8*std.MiB
+var stkbase : std.intptr = 0x10_0000_0000
 
 const __init__ = {
 	var ret
@@ -25,9 +27,8 @@ const __init__ = {
 	if ret < 0
 		std.fatal("unable to init threads: {}", ret)
 	;;
+	tlsmain = (std.bytealloc(8 * sizeof(void#)) : void##)
 }
-
-
 
 const spawn = {fn
 	-> spawnstk(fn, Stacksz)
@@ -35,8 +36,9 @@ const spawn = {fn
 
 const spawnstk = {fn, sz
 	var stk : byte#, tid, ret
-	var szp, f, tos, env, envsz
+	var f, tos, env, envsz
 
+	spawned = true
 	stk = getstk(sz)
 	if stk == sys.Mapbad
 		-> `std.Err "couldn't get stack"
@@ -45,12 +47,6 @@ const spawnstk = {fn, sz
 
 	/* find top of stack */
 	tos = (stk : std.intptr) + (sz : std.intptr)
-
-	/* store the stack size */
-	tos -= sizeof(sys.size)
-	sz -= sizeof(sys.size)
-	szp = (tos : sys.size#)
-	szp# = Stacksz
 
 	/* store the function we call */
 	envsz = std.fnenvsz(fn)
@@ -73,13 +69,16 @@ const spawnstk = {fn, sz
 	if ret == (-1 : void#)
 		-> `std.Err "couldn't spawn thread"
 	;;
-	-> `std.Ok (ret : tid)
+	-> `std.Ok ((stk : std.intptr) >> 24 : tid)
 }
 
 const getstk = {sz
-	var p, m
+	var base, p, m
 
-	p = sys.mmap((0 : byte#), sz, sys.Mprotrw, sys.Mpriv | sys.Manon, -1, 0)
+	/* TODO: freelist of some kind, etc. rather than just overflowing/dying */
+	base = xadd(&stkbase, 0x1000000)
+	p = sys.mmap((base : byte#), sz, sys.Mprotrw, sys.Mpriv | sys.Manon, -1, 0)
+	std.assert(p == (base : byte#), "TODO: delete this assert\n")
 	if p == sys.Mapbad
 		-> p
 	;;
