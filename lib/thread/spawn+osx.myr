@@ -8,10 +8,10 @@ pkg thread =
 	const spawn : (fn : (-> void) -> std.result(tid, byte[:]))
 ;;
 
+const Stacksz = 8*std.MiB
 extern const exit : (-> void)
 extern const start : (-> void)
 
-const Stacksz = 8*std.MiB
 var stkbase : std.intptr = 0x10_0000_0000
 
 const __init__ = {

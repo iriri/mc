@@ -1,9 +1,10 @@
 use sys
 use std
 
-pkg thread =
-	type tid = uint64
+use "atomic"
+use "tls"
 
+pkg thread =
 	const spawn : (fn : (-> void) -> std.result(tid, byte[:]))
 ;;
 
@@ -11,13 +12,15 @@ pkg thread =
 const Stacksz = 8*std.MiB
 extern const exit : (-> void)
 
+var stkbase : std.intptr = 0x10_0000_0000
+
 const spawn = {fn
 	-> spawnstk(fn, Stacksz)
 }
 
 const spawnstk = {fn, sz
 	var stk : byte#, tid, ctid, ret
-	var szp, f, tos, env, envsz
+	var f, tos, env, envsz
 
 	stk = getstk(sz)
 	if stk == sys.Mapbad
@@ -26,12 +29,6 @@ const spawnstk = {fn, sz
 	tid = -1
 	/* find top of stack */
 	tos = (stk : std.intptr) + (sz : std.intptr)
-
-	/* store the stack size */
-	tos -= sizeof(sys.size)
-	sz -= sizeof(sys.size)
-	szp = (tos : sys.size#)
-	szp# = Stacksz
 
 	/* store the function we call */
 	envsz = std.fnenvsz(fn)
@@ -58,13 +55,15 @@ const spawnstk = {fn, sz
 	if ret < 0
 		-> `std.Err "couldn't spawn thread"
 	;;
-	-> `std.Ok (tid : tid)
+	-> `std.Ok ((stk : std.intptr) >> 24 : tid)
 }
 
 const getstk = {sz
-	var p, m
+	var base, p, m
 
-	p = sys.mmap((0 : byte#), sz, sys.Mprotrw, sys.Mpriv | sys.Manon, -1, 0)
+	base = xadd(&stkbase, 0x1000000)
+	p = sys.mmap((base : byte#), sz, sys.Mprotrw, sys.Mpriv | sys.Manon, -1, 0)
+	std.assert(p == (base : byte#), "TODO: delete this assert\n")
 	if p == sys.Mapbad
 		-> p
 	;;
