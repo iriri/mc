@@ -4,7 +4,7 @@ use sys
 use "atomic"
 
 pkg thread =
-	type tid = sys.tid
+	type tid = uint32
 	type key = uint32
 
 	const   tlssetcap : (cap : uint32 -> void)
@@ -37,7 +37,7 @@ const tlssetcap = {cap
 	std.assert(!spawned, "error: tls capacity must be set before threads are spawned\n")
 	std.bytefree((tlsmain : byte#), (tlscap : std.size) * sizeof(void#))
 	tlsmain = (std.bytealloc(sizeof(hdr) + ((cap : std.size) * sizeof(void#))) : hdr#)
-	sys.arch_prctl(sys.Archsetfs, (tlsmain : void#))
+	sys.sysarch(sys.Archamd64setfs, (tlsmain : byte#))
 	tlsmain.tid = 0
 	tlscap = cap
 }

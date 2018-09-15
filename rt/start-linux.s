@@ -43,7 +43,7 @@ _start:
 
 	/* XXX: uhh */
 	movq	$158,%rax		/* arch_prctl */
-	movq	$0x1002,%rdi		/* Archgetfs */
+	movq	$0x1002,%rdi		/* Archsetfs */
 	leaq	thread$__tmpmaintls(%rip),%rsi
 	syscall
 

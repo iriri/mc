@@ -12,8 +12,8 @@ extern const exit : (-> void)
 
 const __init__ = {
 	tlsmain = (std.bytealloc(sizeof(hdr) + (8 * sizeof(void#))) : hdr#)
-	tlsmain.tid = 0
 	sys.arch_prctl(sys.Archsetfs, (tlsmain : void#))
+	tlsmain.tid = 0
 }
 
 /* Holy shit flag mania. */
@@ -34,7 +34,7 @@ const spawnstk = {fn, sz
 	if stk == sys.Mapbad
 		-> `std.Err "couldn't get stack"
 	;;
-	(tos, fn, hdr) = initstack(stk, fn, sz)
+	(tos, fn, hdr) = initstk(stk, fn, sz)
 
 	ret = sys.fnclone(Thrflag, \
 		tos,\
@@ -48,7 +48,7 @@ const spawnstk = {fn, sz
 	-> `std.Ok (ret : tid)
 }
 
-const initstack = {stk, fn, sz
+const initstk = {stk, fn, sz
 	var tos, hdr, fp, env, envsz
 
 	tos = (stk : std.intptr) + (sz : std.intptr) - ((tlscap * sizeof(void#)) : std.intptr)
@@ -56,8 +56,6 @@ const initstack = {stk, fn, sz
 	hdr.base = stk
 
 	var fn1 = {
-		/* TODO: consider using the low 32 of `base` instead */
-		hdr.tid = sys.gettid()
 		sys.arch_prctl(sys.Archsetfs, (hdr : void#))
 		fn()
 	}

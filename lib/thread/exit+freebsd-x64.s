@@ -5,9 +5,8 @@ const thread.exit	: (stacksz : std.size -> void)
 thread$exit:
 	/* munmap(base, size) */
 	movq	$73,%rax	/* munmap */
-	movq	%rbp,%rdi
-	andq	$~0xffffff,%rdi	/* base*/
-	movq	$0x800000,%rsi	/* size */
+	movq	%fs:0x8,%rdi	/* base */
+	movq	$0x800000,%rsi	/* stksz */
 	syscall
 
 	/* thr_exit(null) */

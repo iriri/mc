@@ -12,6 +12,8 @@ lib thread =
 	ncpu.myr
 	rwlock.myr
 	sem.myr
+	tls.myr
+	tls-impl+x64.s
 	waitgrp.myr
 
 	# futex-based impls
@@ -26,6 +28,8 @@ lib thread =
 	futex+linux.myr
 	ncpu+linux.myr
 	spawn+linux.myr
+	tls+linux.myr
+	tls-impl+linux-x64.s
 
 	# freebsd impl of thread primitives
 	condvar+freebsd.myr
@@ -33,6 +37,8 @@ lib thread =
 	futex+freebsd.myr
 	ncpu+freebsd.myr
 	spawn+freebsd.myr
+	tls+freebsd.myr
+	tls-impl+freebsd-x64.s
 
 	# netbsd impl of thread primitives
 	#condvar+netbsd.myr
@@ -64,10 +70,6 @@ lib thread =
 
 	atomic-impl+x64.s
 	atomic.myr
-	tls.myr
-	tls-impl+x64.s
-	tls+linux.myr
-	tls-impl+linux-x64.s
 
         lib ../sys:sys
         lib ../std:std

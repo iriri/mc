@@ -15,7 +15,9 @@ extern const exit : (-> void)
 var stkbase : std.intptr = 0x10_0000_0000
 
 const __init__ = {
-	tlsmain = (std.bytealloc(8 * sizeof(void#)) : void##)
+	tlsmain = (std.bytealloc(sizeof(hdr) + (8 * sizeof(void#))) : hdr#)
+	sys.sysarch(sys.Archamd64setfs, (tlsmain : byte#))
+	tlsmain.tid = 0
 }
 
 const spawn = {fn
@@ -23,34 +25,20 @@ const spawn = {fn
 }
 
 const spawnstk = {fn, sz
-	var stk : byte#, tid, ctid, ret
-	var f, tos, env, envsz
+	var stk : byte#, tos, hdr, tid, ret
 
 	stk = getstk(sz)
 	if stk == sys.Mapbad
 		-> `std.Err "couldn't get stack"
 	;;
-	tid = -1
-	/* find top of stack */
-	tos = (stk : std.intptr) + (sz : std.intptr)
-
-	/* store the function we call */
-	envsz = std.fnenvsz(fn)
-	tos -= (envsz : std.intptr)
-	sz -= (envsz : sys.size)
-	env = tos
-	tos -= sizeof((->void))
-	sz -= sizeof((->void))
-	f = (tos : (->void)#)
-	f# = std.fnbdup(fn, (env : byte#)[:envsz])
-	var repr = (&fn : int64[2]#)#
+	(tos, fn, hdr) = initstk(stk, fn, sz)
 
 	ret = sys.thr_new(&[
 		.startfn = (startthread : void#),
 		.arg = (tos : void#),
 		.stkbase = (stk : byte#),
 		.stksz = sz,
-		.tid = &ctid,
+		.tid = (&hdr.tid : uint32#),
 		.ptid = &tid,
 		.flags = 2,
 		.rtp = (0 : sys.rtprio#)
@@ -59,20 +47,32 @@ const spawnstk = {fn, sz
 	if ret < 0
 		-> `std.Err "couldn't spawn thread"
 	;;
-	-> `std.Ok ((stk : std.intptr) >> 24 : tid)
+	-> `std.Ok (tid : tid)
+}
+
+const initstk = {stk, fn, sz
+	var tos, hdr, fp, env, envsz
+
+	tos = (stk : std.intptr) + (sz : std.intptr) - ((tlscap * sizeof(void#)) : std.intptr)
+	hdr = ((tos -= sizeof(hdr)) : hdr#)
+	hdr.base = stk
+
+	var fn1 = {
+		sys.arch_prctl(sys.Archsetfs, (hdr : void#))
+		fn()
+	}
+
+	envsz = std.fnenvsz(fn1)
+	tos -= (envsz : std.intptr)
+	env = tos
+	tos -= sizeof((->void))
+	fp = (tos : (->void)#)
+	fp# = std.fnbdup(fn1, (env : byte#)[:envsz])
+	-> ((tos : byte#), fn1, hdr)
 }
 
 const getstk = {sz
-	var base, p, m
-
-	base = xadd(&stkbase, 0x1000000)
-	p = sys.mmap((base : byte#), sz, sys.Mprotrw, sys.Mpriv | sys.Manon, -1, 0)
-	std.assert(p == (base : byte#), "TODO: delete this assert\n")
-	if p == sys.Mapbad
-		-> p
-	;;
-	m = (p : std.intptr)
-	-> (m : byte#)
+	-> sys.mmap((0 : byte#), sz, sys.Mprotrw, sys.Mpriv | sys.Manon, -1, 0)
 }
 
 const startthread = {f : (-> void)#
