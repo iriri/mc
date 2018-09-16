@@ -4,6 +4,10 @@
 sys$__cenvp:
     .quad 0
 
+/*
+TODO: This doesn't need to exist and could (should?) be punned with something
+else.
+*/
 .globl thread$__tmpmaintls
 thread$__tmpmaintls:
     .quad 0

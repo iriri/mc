@@ -13,6 +13,14 @@
 sys$__cenvp:
     .quad 0
 
+/*
+TODO: This doesn't need to exist and could (should?) be punned with something
+else.
+*/
+.globl thread$__tmpmaintls
+thread$__tmpmaintls:
+    .quad 0
+
 .text
 /*
  * The entry point for the whole program.
@@ -44,6 +52,11 @@ _start:
 	pushq	%rax
 	pushq	%rcx
 	call	cvt
+
+	/* XXX: uhh */
+	movq	$329,%rax		/* Sys__set_tcb */
+	leaq	thread$__tmpmaintls(%rip),%rdi
+	syscall
 
 	xorq %rbp,%rbp
 	/*

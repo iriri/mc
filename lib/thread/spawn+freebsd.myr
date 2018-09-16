@@ -19,7 +19,7 @@ const spawn = {fn
 }
 
 const spawnstk = {fn, sz
-	var stk : byte#, tos, hdr, ret
+	var stk, tos, hdr, ret
 
 	spawned = true
 	stk = getstk(sz)

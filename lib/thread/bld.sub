@@ -67,6 +67,8 @@ lib thread =
 	futex+openbsd:6.2.myr
 	ncpu+openbsd.myr
 	spawn+openbsd.myr
+	tls+openbsd.myr
+	tls-impl+openbsd-x64.s
 
 	atomic-impl+x64.s
 	atomic.myr
