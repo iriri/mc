@@ -9,7 +9,7 @@ _thread$tid:
 .globl _thread$_tlsset
 thread$_tlsset:
 _thread$_tlsset:
-	cmpl	%edi, %fs:0xc
+	cmpl	%fs:0xc, %edi
 	jnb	oob
 
 	movslq	%edi, %rdi
@@ -21,7 +21,7 @@ _thread$_tlsset:
 .globl _thread$_tlsget
 thread$_tlsget:
 _thread$_tlsget:
-	cmpl	%edi, %fs:0xc
+	cmpl	%fs:0xc, %edi
 	jnb	oob
 
 	movslq	%edi, %rdi

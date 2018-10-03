@@ -9,7 +9,8 @@ pkg thread =
 	for `stksz` and `nslots` as neither actually needs 64 bits
 	*/
 	pkglocal type tlshdr = struct
-		tid   : tid /* 64 bits */
+		tid   : tid /* 32 bits */
+		pad   : uint32
 		stksz : uint32
 		len   : uint32
 		slots : void#[...]
