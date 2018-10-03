@@ -1,0 +1,58 @@
+use std
+use sys
+
+use "atomic"
+use "common"
+use "fsbase"
+
+pkg thread =
+	type key = uint32
+
+	const        gettlskey : (-> key)
+	generic      tlsset    : (k : key, v : @a# -> void)
+	generic      tlsget    : (k : key -> @a#)
+	extern const tid       : (-> tid)
+
+	pkglocal const        tlsoob  : (k : key -> void)
+	pkglocal extern const tlslen  : (-> uint32)
+	pkglocal extern const _tlsset : (k : key, v : void# -> void)
+	pkglocal extern const _tlsget : (k : key -> void#)
+;;
+
+var _hdr
+var _cap = 8
+
+const gettlskey = {
+	std.assert(tid() == 0, "error: gettlskey must be called from main thread\n")
+	if _hdr == Zptr
+		_hdr = getfsbase()
+	;;
+
+	if _hdr.len++ == _cap
+		std.assert(_cap < 0x8000_0000, "error: max tls slots exceeded\n")
+		var l = sizeof(tlshdr) + ((_cap : std.size) * sizeof(void#))
+		var h = std.bytealloc(sizeof(tlshdr) + ((_cap *= 2 : std.size) * sizeof(void#)))
+
+		std.memblit(h, (_hdr : byte#), l)
+		/* ugh */
+		if _cap != 16
+			std.bytefree((_hdr : byte#), l)
+		;;
+		_hdr = (h : tlshdr#)
+		setfsbase(_hdr)
+	;;
+	-> (_hdr.len - 1 : key)
+}
+
+generic tlsset = {k, v
+	_tlsset(k, (v : void#))
+}
+
+generic tlsget = {k
+	-> (_tlsget(k) : @a#)
+}
+
+const tlsoob = {k
+	std.fput(std.Err, "error: tls key out of bounds: {}\n", k)
+	std.suicide()
+}

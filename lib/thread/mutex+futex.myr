@@ -2,6 +2,7 @@ use std
 use sys
 
 use "atomic"
+use "common"
 use "futex"
 use "tls"
 

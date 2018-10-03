@@ -13,7 +13,7 @@ const foo = {
 }
 
 const main = {
-	key = thread.tlsreg()
+	key = thread.gettlskey()
 	wg = thread.mkwg(4)
 
 	foo()

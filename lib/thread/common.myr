@@ -1,5 +1,8 @@
 use std
+use sys
 
 pkg thread = 
+	type tid = sys.pid
+
 	pkglocal generic Zptr : @a#  = (0 : @a#)
 ;;

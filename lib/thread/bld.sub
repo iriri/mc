@@ -16,6 +16,10 @@ lib thread =
 	tls-impl+x64.s
 	waitgrp.myr
 
+	# fsbase-based impls
+	tls+fsbase.myr
+	tls-impl+fsbase-x64.s
+
 	# futex-based impls
 	mutex+futex.myr
 	rwlock+futex.myr
@@ -25,20 +29,19 @@ lib thread =
 	# linux impl of basic thread primitives
 	condvar+linux.myr
 	exit+linux-x64.s
+	fsbase+linux.myr
 	futex+linux.myr
 	ncpu+linux.myr
 	spawn+linux.myr
-	tls+linux.myr
-	tls-impl+linux-x64.s
+	tls-impl+fsbase-linux-x64.s
 
 	# freebsd impl of thread primitives
 	condvar+freebsd.myr
 	exit+freebsd-x64.s
+	fsbase+freebsd.myr
 	futex+freebsd.myr
 	ncpu+freebsd.myr
 	spawn+freebsd.myr
-	tls+freebsd.myr
-	tls-impl+freebsd-x64.s
 
 	# netbsd impl of thread primitives
 	#condvar+netbsd.myr
@@ -64,11 +67,10 @@ lib thread =
 	# openbsd impl of thread primitives
 	condvar+openbsd:6.2.myr
 	exit+openbsd-x64.s
+	fsbase+openbsd.myr
 	futex+openbsd:6.2.myr
 	ncpu+openbsd.myr
 	spawn+openbsd.myr
-	tls+openbsd.myr
-	tls-impl+openbsd-x64.s
 
 	atomic-impl+x64.s
 	atomic.myr

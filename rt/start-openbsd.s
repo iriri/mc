@@ -13,13 +13,9 @@
 sys$__cenvp:
     .quad 0
 
-/*
-TODO: This doesn't need to exist and could (should?) be punned with something
-else.
-*/
-.globl thread$__tmpmaintls
-thread$__tmpmaintls:
-    .quad 0
+.globl thread$__tls
+thread$__tls:
+    .fill 80
 
 .text
 /*
@@ -28,6 +24,7 @@ thread$__tmpmaintls:
  *  - Sets up all argc entries as slices
  *  - Converts argc/argv to a slice
  *  - Stashes a raw envp copy in __cenvp (for syscalls to use)
+ *  - Sets up thread local storage for the main thread
  *  - Calls main()
  */
 .globl _start
@@ -53,9 +50,9 @@ _start:
 	pushq	%rcx
 	call	cvt
 
-	/* XXX: uhh */
+	/* set up the intial tls region for the main thread */
 	movq	$329,%rax		/* Sys__set_tcb */
-	leaq	thread$__tmpmaintls(%rip),%rdi
+	leaq	thread$__tls(%rip),%rdi
 	syscall
 
 	xorq %rbp,%rbp

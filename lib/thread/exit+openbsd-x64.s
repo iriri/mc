@@ -10,10 +10,20 @@ thread$exit:
 	 */
 	movq	thread$exitstk,%rsp
 
+	/* __get_tcb() */
+	movq	$330,%rax
+	syscall
+
+	movslq	%fs:0x8,%r10	/* stksz */
+	movslq	%fs:0xc,%r11	/* nslots */
+
 	/* munmap(base, size) */
 	movq	$73,%rax	/* munmap */
-	movq	%fs:0x8,%rdi	/* base */
-	movq	$0x800000,%rsi	/* stksz */
+	movq	%rax,%rdi	/* base */
+	subq	%r10,%rdi
+	leaq	0x10(%r10, %r11, 0x8),%rsi	/* stksz + sizeof tls region */
+	addq	$0xf,%rsi
+	andq	$~0xf,%rsi
 	syscall
 
 	/* __threxit(0) */
