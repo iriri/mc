@@ -1,0 +1,39 @@
+use std
+use sys
+
+use "common"
+
+pkg thread =
+	/*
+	the offset of `slots` must be a multiple of 16 so we use 32 bit values
+	for `stksz` and `nslots` as neither actually needs 64 bits
+	*/
+	pkglocal type tlshdr = struct
+		tid   : tid /* 64 bits */
+		stksz : uint32
+		len   : uint32
+		slots : void#[...]
+	;;
+
+	pkglocal const setfsbase : (h : tlshdr# -> void)
+	pkglocal const getfsbase : (-> tlshdr#)
+;;
+
+const setfsbase = {h
+	match sys.sysarch(sys.Archamd64setfs, &(h : void#))
+	| 0:
+	| err:
+		std.fput(std.Err, "error: sysarch returned: {}\n", err)
+		std.suicide()
+	;;
+}
+
+const getfsbase = {
+	var h
+	match sys.sysarch(sys.Archamd64getfs, &h)
+	| 0: -> (h : tlshdr#)
+	| err:
+		std.fput(std.Err, "error: sysarch returned: {}\n", err)
+		std.suicide()
+	;;
+}

@@ -1,6 +1,7 @@
 use std
 use sys
 
+use "common"
 use "fsbase"
 use "tls"
 
@@ -54,7 +55,7 @@ const initstk = {stk, fn, sz
 	var len, tos, hdr, fp, env, envsz
 
 	len = tlslen()
-	sz -= ((sizeof(tlshdr) + ((len : sys.size) * sizeof(void#))) + 0xf) & ~0xf
+	sz -= (sizeof(tlshdr) + ((len : sys.size) * sizeof(void#)) + 0xf) & ~0xf
 	tos = (stk : std.intptr) + (sz : std.intptr)
 	hdr = (tos : tlshdr#)
 	hdr.stksz = (sz : uint32)

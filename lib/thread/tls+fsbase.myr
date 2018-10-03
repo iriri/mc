@@ -54,5 +54,7 @@ generic tlsget = {k
 
 const tlsoob = {k
 	std.fput(std.Err, "error: tls key out of bounds: {}\n", k)
+	std.fput(std.Err, "fs: {}\nlen: {}\nhdr: {}\nhdr.len: {}\n",
+		getfsbase(), tlslen(), _hdr, _hdr.len)
 	std.suicide()
 }

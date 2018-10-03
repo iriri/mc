@@ -30,7 +30,7 @@ _thread$_tlsget:
 	ret
 
 oob:
-	call	_thread$tlsoob
+	call	thread$tlsoob
 
 .globl thread$tlslen
 .globl _thread$tlslen

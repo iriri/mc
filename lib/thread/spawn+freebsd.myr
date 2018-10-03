@@ -2,6 +2,7 @@ use sys
 use std
 
 use "common"
+use "fsbase"
 use "tls"
 
 pkg thread =
@@ -21,7 +22,6 @@ const spawn = {fn
 const spawnstk = {fn, sz
 	var stk, tos, hdr, ret
 
-	spawned = true
 	stk = getstk(sz)
 	if stk == sys.Mapbad
 		-> `std.Err "couldn't get stack"
@@ -46,16 +46,16 @@ const spawnstk = {fn, sz
 }
 
 const initstk = {stk, fn, sz
-	var tos, hdr, fp, env, envsz
+	var len, tos, hdr, fp, env, envsz
 
+	len = tlslen()
+	sz -= (sizeof(tlshdr) + ((len : sys.size) * sizeof(void#)) + 0xf) & ~0xf
 	tos = (stk : std.intptr) + (sz : std.intptr)
-	tos -= sizeof(hdr) + ((tlscap * sizeof(void#)) : std.intptr)
-	sz -= sizeof(hdr) + ((tlscap * sizeof(void#)) : sys.size)
-	hdr = (tos : hdr#)
-	hdr.base = stk
+	hdr = (tos : tlshdr#)
+	hdr.len = len
 
 	var fn1 = {
-		wrfsbase((hdr : byte#))
+		setfsbase(hdr)
 		fn()
 	}
 
