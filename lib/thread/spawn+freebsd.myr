@@ -54,17 +54,16 @@ const initstk = {stk, fn, sz
 	sz -= tlssz
 	tos = (stk : std.intptr) + (sz : std.intptr)
 	hdr = (tos : tlshdr#)
-	hdr.len = len
+	hdr.stksz = (sz : uint32)
 	hdr.tlssz = (tlssz : uint32)
 
 	var fn1 = {
 		/*
-		We write `hdr.stksz` here because `hdr.stksz` follows `hdr.tid`
-		so it gets overwritten by the kernel in `thr_new`. Even though
-		`sys.pid` is 32 bits, `thr_param.tid` is a `uint64#` for legacy
-		reasons.
+		We write `hdr.len` here because it follows `hdr.tid` so it gets
+		overwritten by the kernel in `thr_new`. Even though `sys.pid`
+		is 32 bits, `thr_param.tid` is a `uint64#` for legacy reasons.
 		*/
-		hdr.stksz = (sz : uint32)
+		hdr.len = len
 		setfsbase(hdr)
 		fn()
 	}
