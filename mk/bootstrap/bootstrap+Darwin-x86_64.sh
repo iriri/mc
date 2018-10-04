@@ -7,7 +7,7 @@ set -x
 	as -g -o mbld/cpufeatures.o mbld/cpufeatures+posixy-x64.s
 	as -g -o lib/thread/start.o lib/thread/start+osx-x64.s
 	as -g -o lib/thread/atomic-impl.o lib/thread/atomic-impl+x64.s
-	as -g -o lib/thread/tls-impl.o lib/thread/tls-impl+x64.s
+	as -g -o lib/thread/tls-impl.o lib/thread/tls-impl+osx-x64.s
 	as -g -o lib/std/getbp.o lib/std/getbp+posixy-x64.s
 	$pwd/6/6m -I lib/sys lib/std/option.myr
 	$pwd/6/6m -I lib/sys lib/std/traits.myr
@@ -123,7 +123,7 @@ set -x
 	$pwd/muse/muse -o lib/bio/libbio.use -p bio lib/bio/puti.use lib/bio/geti.use lib/bio/fd.use lib/bio/mem.use lib/bio/bio.use lib/bio/types.use lib/bio/iter.use
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/common.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/atomic.myr
-	$pwd/6/6m -I lib/sys -I lib/std lib/thread/tls.myr
+	$pwd/6/6m -I lib/sys -I lib/std lib/thread/tls+osx.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/spawn+osx.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/ncpu.myr
 	$pwd/6/6m -I lib/sys -I lib/std lib/thread/futex+osx.myr

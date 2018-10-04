@@ -7,7 +7,7 @@ set -x
 	as -g -o mbld/cpufeatures.o mbld/cpufeatures+posixy-x64.s
 	as -g -o lib/thread/exit.o lib/thread/exit+linux-x64.s
 	as -g -o lib/thread/atomic-impl.o lib/thread/atomic-impl+x64.s
-	as -g -o lib/thread/tls-impl.o lib/thread/tls-impl+fsbase-linux-x64.s
+	as -g -o lib/thread/tls-impl.o lib/thread/tls-impl+fsbase-x64.s
 	as -g -o lib/std/getbp.o lib/std/getbp+posixy-x64.s
 	$pwd/6/6m -I lib/sys lib/std/option.myr
 	$pwd/6/6m -I lib/sys lib/std/traits.myr

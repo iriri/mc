@@ -12,9 +12,6 @@ lib thread =
 	ncpu.myr
 	rwlock.myr
 	sem.myr
-	tls.myr
-	tls-impl+x64.s
-	types.myr
 	waitgrp.myr
 
 	# fsbase-based impls
@@ -35,7 +32,6 @@ lib thread =
 	futex+linux.myr
 	ncpu+linux.myr
 	spawn+linux.myr
-	tls-impl+fsbase-linux-x64.s
 
 	# freebsd impl of thread primitives
 	condvar+freebsd.myr
@@ -58,6 +54,9 @@ lib thread =
 	futex+osx.myr
 	spawn+osx.myr
 	start+osx-x64.s
+	tls+osx.myr
+	tls-impl+osx-x64.s
+	types+osx.myr
 
 	# 9front impl of thread primitives
 	#condvar+plan9.myr

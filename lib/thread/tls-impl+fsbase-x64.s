@@ -2,7 +2,7 @@
 .globl _thread$tid
 thread$tid:
 _thread$tid:
-	movq	%fs:0x0, %rax
+	movl	%fs:0x0, %eax
 	ret
 
 .globl thread$_tlsset
