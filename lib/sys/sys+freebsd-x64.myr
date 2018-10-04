@@ -38,7 +38,7 @@ pkg sys =
 	type cpulevel	= int
 	type cpusetid	= int
 	type idtype	= int
-	type sysarchop	= int
+	type sysarchop	= int64
 	
 	type acltype	= int
 	type acltag	= uint32
@@ -808,7 +808,7 @@ pkg sys =
 	const Archamd64setfs   : sysarchop = 129
 	const Archamd64getgs   : sysarchop = 130
 	const Archamd64setgs   : sysarchop = 131
-	const Archamd64getxfpu : sysarchop = 131
+	const Archamd64getxfpu : sysarchop = 132
 	
 	extern const syscall : (sc:scno, args:... -> int64)
 	extern var __cenvp : byte##
@@ -1977,7 +1977,7 @@ const getfh	= {fname, fhp
 	 -> (syscall(Sysgetfh, a(fname), a(fhp)) : int)
 }
 const sysarch	= {op, parms
-	 -> (syscall(Syssysarch, a(op), a(parms)) : int)
+	 -> (syscall(Syssysarch, op, a(parms)) : int)
 }
 const rtprio	= {function, pid, rtp
 	 -> (syscall(Sysrtprio, a(function), a(pid), a(rtp)) : int)
