@@ -11,16 +11,13 @@ thread$exit:
 	movq	%rsp,%rsi	/* addr */
 	syscall
 
-	movslq	%fs:0x8,%r10	/* stksz */
-	movslq	%fs:0xc,%r11	/* nslots */
-
 	/* munmap(base, size) */
 	movq	$11,%rax	/* munmap */
-	movq	(%rsp),%rdi	/* base */
-	subq	%r10,%rdi
-	leaq	0x10(%r10, %r11, 0x8),%rsi	/* stksz + sizeof tls region */
-	addq	$0xf,%rsi
-	andq	$~0xf,%rsi
+	movslq	%fs:0x8,%r10	/* stksz */
+	movq	(%rsp),%rdi	/* fs */
+	subq	%r10,%rdi	/* base = fs - stksz */
+	movslq	%fs:0xc,%rsi	/* tlssz */
+	addq	%r10,%rsi	/* size = stksz + tlssz */
 	syscall
 
 	/* thread_exit(0) */

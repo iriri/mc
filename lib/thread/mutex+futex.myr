@@ -1,10 +1,9 @@
 use std
-use sys
 
 use "atomic"
-use "common"
 use "futex"
 use "tls"
+use "types"
 
 pkg thread =
 	type mutex = struct

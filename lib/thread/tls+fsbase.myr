@@ -1,9 +1,8 @@
 use std
-use sys
 
-use "atomic"
 use "common"
 use "fsbase"
+use "types"
 
 pkg thread =
 	type key = uint32

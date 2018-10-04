@@ -2,8 +2,8 @@ use std
 use sys
 
 use "common"
-use "fsbase"
 use "tls"
+use "types"
 
 pkg thread =
 	const spawn : (fn : (-> void) -> std.result(tid, byte[:]))
@@ -38,7 +38,7 @@ const spawnstk = {fn, sz
 
 	tfp = [
 		.tcb = (hdr : void#),
-		.tid = (&hdr.tid : sys.pid#), /* TODO: writes 64, we only care about 32(?), fix this. */
+		.tid = (&hdr.tid : sys.pid#),
 		.stk = (tos : byte#),
 	]
 	ret = sys.__tfork_thread(&tfp,
@@ -52,14 +52,16 @@ const spawnstk = {fn, sz
 }
 
 const initstk = {stk, fn, sz
-	var len, tos, hdr, fp, env, envsz
+	var len, tlssz, tos, hdr, fp, env, envsz
 
 	len = tlslen()
-	sz -= (sizeof(tlshdr) + ((len : sys.size) * sizeof(void#)) + 0xf) & ~0xf
+	tlssz = (sizeof(tlshdr) + ((len : sys.size) * sizeof(void#)) + 0xf) & ~0xf
+	sz -= tlssz
 	tos = (stk : std.intptr) + (sz : std.intptr)
 	hdr = (tos : tlshdr#)
-	hdr.stksz = (sz : uint32)
 	hdr.len = len
+	hdr.stksz = (sz : uint32)
+	hdr.tlssz = (tlssz : uint32)
 
 	envsz = std.fnenvsz(fn)
 	tos -= (envsz : std.intptr)

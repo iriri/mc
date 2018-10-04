@@ -14,11 +14,13 @@ lib thread =
 	sem.myr
 	tls.myr
 	tls-impl+x64.s
+	types.myr
 	waitgrp.myr
 
 	# fsbase-based impls
 	tls+fsbase.myr
 	tls-impl+fsbase-x64.s
+	types+fsbase.myr
 
 	# futex-based impls
 	mutex+futex.myr

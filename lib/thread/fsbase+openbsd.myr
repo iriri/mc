@@ -1,20 +1,8 @@
 use sys
 
-use "common"
+use "types"
 
 pkg thread =
-	/*
-	the offset of `slots` must be a multiple of 16 so we use 32 bit values
-	for `stksz` and `nslots` as neither actually needs 64 bits
-	*/
-	pkglocal type tlshdr = struct
-		tid   : tid /* 32 bits */
-		pad   : uint32
-		stksz : uint32
-		len   : uint32
-		slots : void#[...]
-	;;
-
 	pkglocal const setfsbase : (h : tlshdr# -> void)
 	pkglocal const getfsbase : (-> tlshdr#)
 ;;
