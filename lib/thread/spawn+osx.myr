@@ -51,6 +51,7 @@ const spawnstk = {fn, sz
 		0x01000000)			/* flags (PTHREAD_START_CUSTOM): don't alloc stack in kernel */
 
 	if ret == (-1 : void#)
+		sys.munmap(stk, sz)
 		-> `std.Err "couldn't spawn thread"
 	;;
 	-> `std.Ok (stk : tid)

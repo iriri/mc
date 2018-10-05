@@ -21,19 +21,19 @@ const spawn = {fn
 }
 
 const spawnstk = {fn, sz
-	var stk, tos, hdr, ret
+	var stk, tos, stksz, hdr, ret
 
 	stk = sys.mmap((0 : byte#), sz, sys.Mprotrw, sys.Mpriv | sys.Manon, -1, 0)
 	if stk == sys.Mapbad
 		-> `std.Err "couldn't get stack"
 	;;
-	(tos, sz, hdr) = initstk(stk, fn, sz)
+	(tos, stksz, hdr) = initstk(stk, fn, sz)
 
 	ret = sys.thr_new(&[
 		.startfn = (startthread : void#),
 		.arg = (tos : void#),
 		.stkbase = (stk : byte#),
-		.stksz = sz,
+		.stksz = stksz,
 		.tid = (&hdr.tid : uint64#),
 		.ptid = Zptr,
 		.flags = 2,
@@ -41,6 +41,7 @@ const spawnstk = {fn, sz
 	], sizeof(sys.thrparam))
 
 	if ret < 0
+		sys.munmap(stk, sz)
 		-> `std.Err "couldn't spawn thread"
 	;;
 	-> `std.Ok (ret : tid)
@@ -51,11 +52,11 @@ const initstk = {stk, fn, sz
 
 	stksz = sz
 	len = tlslen()
-	sz -= (sizeof(tlshdr) + ((len : sys.size) * sizeof(void#)) + 0xf) & ~0xf
-	tos = (stk : std.intptr) + (sz : std.intptr)
+	stksz -= (sizeof(tlshdr) + ((len : sys.size) * sizeof(void#)) + 0xf) & ~0xf
+	tos = (stk : std.intptr) + (stksz : std.intptr)
 	hdr = (tos : tlshdr#)
 	hdr.base = stk
-	hdr.stksz = stksz
+	hdr.stksz = sz
 
 	var fn1 = {
 		/*
@@ -70,13 +71,13 @@ const initstk = {stk, fn, sz
 
 	envsz = std.fnenvsz(fn1)
 	tos -= (envsz : std.intptr)
-	sz -= (envsz : sys.size)
+	stksz -= (envsz : sys.size)
 	env = tos
 	tos -= sizeof((->void))
-	sz -= sizeof((->void))
+	stksz -= sizeof((->void))
 	fp = (tos : (->void)#)
 	fp# = std.fnbdup(fn1, (env : byte#)[:envsz])
-	-> ((tos : byte#), sz, hdr)
+	-> ((tos : byte#), stksz, hdr)
 }
 
 const startthread = {f : (-> void)#

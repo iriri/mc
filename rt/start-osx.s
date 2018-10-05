@@ -42,8 +42,9 @@ start:
 	call	cvt
 
 	/* set up the intial tls region for the main thread */
-	movq	$3000003,%rax		/* undocumented setgsbase syscall */
+	movq	$0x3000003,%rax		/* undocumented setgsbase syscall */
 	leaq	thread$__tls(%rip),%rdi
+	movq	%rdi,0x20(%rdi)
 	syscall
 
 	xorq %rbp,%rbp

@@ -38,7 +38,7 @@ const spawnstk = {fn, sz
 		Zptr,
 		(startthread : void#))
 	if ret < 0
-		/* XXX: leaks */
+		sys.munmap(stk, sz)
 		-> `std.Err "couldn't spawn thread"
 	;;
 	-> `std.Ok (ret : tid)

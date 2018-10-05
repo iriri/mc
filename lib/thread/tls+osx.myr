@@ -57,9 +57,9 @@ const tlsoob = {k
 
 const setgsbase = {h
 	match _setgsbase(h)
-	| 0:
+	| 0xf: /* yes, this indicates success; no, it's not documented */
 	| err:
-		std.fput(std.Err, "error: undocumented setgsbase syscall returned {}\n", err)
+		std.fput(std.Err, "error: setgsbase returned {}\n", err)
 		std.suicide()
 	;;
 }
