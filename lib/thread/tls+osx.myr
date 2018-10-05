@@ -1,49 +1,69 @@
 use std
 
-use "atomic"
+use "common"
+use "types"
 
 pkg thread =
-	type tid = uint32
-	type key = uint32
+	const        gettlskey : (-> key)
+	generic      tlsset    : (k : key, v : @a# -> void)
+	generic      tlsget    : (k : key -> @a#)
+	extern const tid       : (-> tid)
 
-	const   tlssetcap : (cap : uint32 -> void)
-	const   tlsreg    : (-> key)
-	generic tlsset    : (k : key, v : @a# -> void)
-	generic tlsget    : (k : key -> @a#)
-
-	extern const tid     : (-> tid)
-	extern const _tlsset : (k : key, v : void# -> void)
-	extern const _tlsget : (k : key -> void#)
-
-	pkglocal var tlscap  : uint32 = 8
-	pkglocal var tlsmain : void## = (0 : void##) /* doesn't link unless this is initialized */
-	pkglocal var spawned = false
+	pkglocal const        tlsoob     : (k : key -> void)
+	pkglocal extern const tlslen     : (-> uint32)
+	pkglocal const        setgsbase  : (h : tlshdr# -> void)
+	pkglocal extern const getgsbase  : (-> tlshdr#)
 ;;
 
-var tlslen : uint32 = 0
+var _hdr
+var _cap = 8
 
-const tlssetcap = {cap
-	cap = cap + 1 & ~0x1
-	/* Arbitarily chosen for now. `stksz` is currently fixed to 8MiB but... */
-	std.assert(cap <= 1024, "error: cannot have more than 1024 tls slots\n")
-	std.assert(!spawned, "error: tls capacity must be set before threads are spawned\n")
-	std.bytefree((tlsmain : byte#), (tlscap : std.size) * sizeof(void#))
-	tlsmain = (std.bytealloc((cap : std.size) * sizeof(void#)) : void##)
-	tlscap = cap
-}
+const gettlskey = {
+	std.assert(tid() == 0, "error: gettlskey must be called from main thread\n")
+	if _hdr == Zptr
+		_hdr = getgsbase()
+	;;
 
-const tlsreg = {
-	var k = xadd(&tlslen, 1)
-	std.assert(k < tlscap, "error: tls capacity exceeded\n")
-	-> (k : key)
+	if _hdr.len++ == _cap
+		std.assert(_cap < 0x8000_0000, "error: max tls slots exceeded\n")
+		var l = sizeof(tlshdr) + ((_cap : std.size) * sizeof(void#))
+		var h = std.bytealloc(sizeof(tlshdr) + ((_cap *= 2 : std.size) * sizeof(void#)))
+
+		std.memblit(h, (_hdr : byte#), l)
+		/* ugh */
+		if _cap != 16
+			std.bytefree((_hdr : byte#), l)
+		;;
+		_hdr = (h : tlshdr#)
+		setgsbase(_hdr)
+	;;
+	-> (_hdr.len - 1 : key)
 }
 
 generic tlsset = {k, v
-	std.assert((k : uint32) < tlslen, "error: tls index out of bounrs\n")
 	_tlsset(k, (v : void#))
 }
 
 generic tlsget = {k
-	std.assert((k : uint32) < tlslen, "error: tls index out of bounrs\n")
 	-> (_tlsget(k) : @a#)
 }
+
+const tlsoob = {k
+	std.fput(std.Err, "error: tls key out of bounds: {}\n", k)
+	std.fput(std.Err, "gs: {}\nlen: {}\nhdr: {}\nhdr.len: {}\n",
+		getgsbase(), tlslen(), _hdr, _hdr.len)
+	std.suicide()
+}
+
+const setgsbase = {h
+	match _setgsbase(h)
+	| 0:
+	| err:
+		std.fput(std.Err, "error: undocumented setgsbase syscall returned {}\n", err)
+		std.suicide()
+	;;
+}
+
+extern const _tlsset    : (k : key, v : void# -> void)
+extern const _tlsget    : (k : key -> void#)
+extern const _setgsbase : (h : tlshdr# -> int64)

@@ -10,17 +10,10 @@ thread$exit:
 	 */
 	movq	thread$exitstk,%rsp
 
-	/* __get_tcb() */
-	movq	$330,%rax
-	syscall
-
 	/* munmap(base, size) */
 	movq	$73,%rax	/* munmap */
-	movslq	%fs:0x8,%r10	/* stksz */
-	movq	%rax,%rdi	/* fs */
-	subq	%r10,%rdi	/* base = fs - stksz */
-	movslq	%fs:0xc,%rsi	/* tlssz */
-	addq	%r10,%rsi	/* size = stksz + tlssz */
+	subq	%fs:0x08,%rdi	/* base */
+	movq	%fs:0x10,%rsi	/* stksz */
 	syscall
 
 	/* __threxit(0) */

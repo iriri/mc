@@ -5,8 +5,6 @@ use "fsbase"
 use "types"
 
 pkg thread =
-	type key = uint32
-
 	const        gettlskey : (-> key)
 	generic      tlsset    : (k : key, v : @a# -> void)
 	generic      tlsget    : (k : key -> @a#)
@@ -14,8 +12,6 @@ pkg thread =
 
 	pkglocal const        tlsoob  : (k : key -> void)
 	pkglocal extern const tlslen  : (-> uint32)
-	pkglocal extern const _tlsset : (k : key, v : void# -> void)
-	pkglocal extern const _tlsget : (k : key -> void#)
 ;;
 
 var _hdr
@@ -57,3 +53,6 @@ const tlsoob = {k
 		getfsbase(), tlslen(), _hdr, _hdr.len)
 	std.suicide()
 }
+
+extern const _tlsset : (k : key, v : void# -> void)
+extern const _tlsget : (k : key -> void#)

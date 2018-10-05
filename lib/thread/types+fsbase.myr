@@ -2,16 +2,13 @@ use sys
 
 pkg thread =
 	type tid = sys.pid /* 32 bits on all of the fsbase platforms */
+	type key = uint32
 
-	/*
-	The offset of `slots` must be a multiple of 16 so we use 32 bit values
-	for `stksz` and `nslots` as neither actually needs 64 bits
-	*/
 	pkglocal type tlshdr = struct
 		tid   : tid
 		len   : uint32
-		stksz : uint32
-		tlssz : uint32
+		base  : byte#
+		stksz : sys.size
 		slots : void#[...]
 	;;
 ;;

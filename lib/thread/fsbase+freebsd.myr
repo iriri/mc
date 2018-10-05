@@ -12,7 +12,7 @@ const setfsbase = {h
 	match sys.sysarch(sys.Archamd64setfs, &(h : void#))
 	| 0:
 	| err:
-		std.fput(std.Err, "error: sysarch returned: {}\n", err)
+		std.fput(std.Err, "error: sysarch returned {}\n", err)
 		std.suicide()
 	;;
 }
@@ -22,7 +22,7 @@ const getfsbase = {
 	match sys.sysarch(sys.Archamd64getfs, &h)
 	| 0: -> (h : tlshdr#)
 	| err:
-		std.fput(std.Err, "error: sysarch returned: {}\n", err)
+		std.fput(std.Err, "error: sysarch returned {}\n", err)
 		std.suicide()
 	;;
 }

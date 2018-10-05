@@ -52,16 +52,15 @@ const spawnstk = {fn, sz
 }
 
 const initstk = {stk, fn, sz
-	var len, tlssz, tos, hdr, fp, env, envsz
+	var len, tos, hdr, fp, env, envsz
 
 	len = tlslen()
-	tlssz = (sizeof(tlshdr) + ((len : sys.size) * sizeof(void#)) + 0xf) & ~0xf
-	sz -= tlssz
 	tos = (stk : std.intptr) + (sz : std.intptr)
+	tos -= (sizeof(tlshdr) + ((len : std.intptr) * sizeof(void#)) + 0xf) & ~0xf
 	hdr = (tos : tlshdr#)
 	hdr.len = len
-	hdr.stksz = (sz : uint32)
-	hdr.tlssz = (tlssz : uint32)
+	hdr.base = stk
+	hdr.stksz = sz
 
 	envsz = std.fnenvsz(fn)
 	tos -= (envsz : std.intptr)

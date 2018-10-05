@@ -13,7 +13,7 @@ _thread$_tlsset:
 	jnb	oob
 
 	movslq	%edi, %rdi
-	movq	$0x10, %r10
+	movq	$0x18, %r10
 	movq	%rsi, %fs:(%r10, %rdi, 0x8)
 	ret
 
@@ -25,7 +25,7 @@ _thread$_tlsget:
 	jnb	oob
 
 	movslq	%edi, %rdi
-	movq	$0x10, %r10
+	movq	$0x18, %r10
 	movq	%fs:(%r10, %rdi, 0x8), %rax
 	ret
 

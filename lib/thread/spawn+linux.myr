@@ -6,7 +6,7 @@ use "tls"
 use "types"
 
 pkg thread =
-	const spawn    : (fn : (-> void) -> std.result(tid, byte[:]))
+	const spawn : (fn : (-> void) -> std.result(tid, byte[:]))
 ;;
 
 const Stacksz = 8*std.MiB
@@ -24,7 +24,7 @@ const spawn = {fn
 const spawnstk = {fn, sz
 	var stk, tos, hdr, ret
 
-	stk = getstk(sz)
+	stk = sys.mmap((0 : byte#), sz, sys.Mprotrw, sys.Mpriv | sys.Manon, -1, 0)
 	if stk == sys.Mapbad
 		-> `std.Err "couldn't get stack"
 	;;
@@ -38,23 +38,22 @@ const spawnstk = {fn, sz
 		Zptr,
 		(startthread : void#))
 	if ret < 0
-		/* XXX: leaks? */
+		/* XXX: leaks */
 		-> `std.Err "couldn't spawn thread"
 	;;
 	-> `std.Ok (ret : tid)
 }
 
 const initstk = {stk, fn, sz
-	var len, tlssz, tos, hdr, fp, env, envsz
+	var len, tos, hdr, fp, env, envsz
 
 	len = tlslen()
-	tlssz = (sizeof(tlshdr) + ((len : sys.size) * sizeof(void#)) + 0xf) & ~0xf
-	sz -= tlssz
 	tos = (stk : std.intptr) + (sz : std.intptr)
+	tos -= (sizeof(tlshdr) + ((len : std.intptr) * sizeof(void#)) + 0xf) & ~0xf
 	hdr = (tos : tlshdr#)
 	hdr.len = len
-	hdr.stksz = (sz : uint32)
-	hdr.tlssz = (tlssz : uint32)
+	hdr.base = stk
+	hdr.stksz = sz
 
 	envsz = std.fnenvsz(fn)
 	tos -= (envsz : std.intptr)
@@ -63,10 +62,6 @@ const initstk = {stk, fn, sz
 	fp = (tos : (->void)#)
 	fp# = std.fnbdup(fn, (env : byte#)[:envsz])
 	-> ((tos : byte#), hdr)
-}
-
-const getstk = {sz
-	-> sys.mmap((0 : byte#), sz, sys.Mprotrw, sys.Mpriv | sys.Manon, -1, 0)
 }
 
 const startthread = {fn : (-> void)

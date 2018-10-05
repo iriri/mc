@@ -23,7 +23,7 @@ const spawn = {fn
 const spawnstk = {fn, sz
 	var stk, tos, hdr, ret
 
-	stk = getstk(sz)
+	stk = sys.mmap((0 : byte#), sz, sys.Mprotrw, sys.Mpriv | sys.Manon, -1, 0)
 	if stk == sys.Mapbad
 		-> `std.Err "couldn't get stack"
 	;;
@@ -47,15 +47,15 @@ const spawnstk = {fn, sz
 }
 
 const initstk = {stk, fn, sz
-	var len, tlssz, tos, hdr, fp, env, envsz
+	var stksz, len, tos, hdr, fp, env, envsz
 
+	stksz = sz
 	len = tlslen()
-	tlssz = (sizeof(tlshdr) + ((len : sys.size) * sizeof(void#)) + 0xf) & ~0xf
-	sz -= tlssz
+	sz -= (sizeof(tlshdr) + ((len : sys.size) * sizeof(void#)) + 0xf) & ~0xf
 	tos = (stk : std.intptr) + (sz : std.intptr)
 	hdr = (tos : tlshdr#)
-	hdr.stksz = (sz : uint32)
-	hdr.tlssz = (tlssz : uint32)
+	hdr.base = stk
+	hdr.stksz = stksz
 
 	var fn1 = {
 		/*
@@ -77,10 +77,6 @@ const initstk = {stk, fn, sz
 	fp = (tos : (->void)#)
 	fp# = std.fnbdup(fn1, (env : byte#)[:envsz])
 	-> ((tos : byte#), sz, hdr)
-}
-
-const getstk = {sz
-	-> sys.mmap((0 : byte#), sz, sys.Mprotrw, sys.Mpriv | sys.Manon, -1, 0)
 }
 
 const startthread = {f : (-> void)#
