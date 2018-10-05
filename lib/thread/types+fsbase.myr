@@ -6,7 +6,7 @@ pkg thread =
 
 	pkglocal type tlshdr = struct
 		tid   : tid
-		len   : uint32
+		len   : key
 		base  : byte#
 		stksz : sys.size
 		slots : void#[...]

@@ -11,7 +11,7 @@ pkg thread =
 	extern const tid       : (-> tid)
 
 	pkglocal const        tlsoob  : (k : key -> void)
-	pkglocal extern const tlslen  : (-> uint32)
+	pkglocal extern const tlslen  : (-> key)
 ;;
 
 var _hdr
@@ -36,7 +36,7 @@ const gettlskey = {
 		_hdr = (h : tlshdr#)
 		setfsbase(_hdr)
 	;;
-	-> (_hdr.len - 1 : key)
+	-> _hdr.len - 1
 }
 
 generic tlsset = {k, v
