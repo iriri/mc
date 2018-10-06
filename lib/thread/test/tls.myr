@@ -2,24 +2,33 @@ use std
 use sys
 use thread
 
-var key
+var start
+var end
 var wg
 
-const foo = {
-	thread.tlsset(key, (thread.tid() : void#))
-	var p : void# = thread.tlsget(key)
-	std.put("{}\n", p)
+const setget = {
+	for var i = start; i <= end; i++
+		thread.tlsset(i, ((thread.tid() : thread.key) + i : void#))
+	;;
+	for var i = start; i <= end; i++
+		std.assert(thread.tlsget(i) == ((thread.tid() : thread.key) + i : void#),
+			"tls is broken\n")
+	;;
 	thread.wgpost(&wg)
 }
 
 const main = {
-	key = thread.gettlskey()
-	wg = thread.mkwg(4)
+	start = thread.gettlskey()
+	for var i = 0; i < 100; i++
+		thread.gettlskey()
+	;;
+	end = thread.gettlskey()
 
-	foo()
-	thread.spawn(foo)
-	thread.spawn(foo)
-	thread.spawn(foo)
+	wg = thread.mkwg(101)
+	for var i = 0; i < 100; i++
+		thread.spawn(setget)
+	;;
+	setget()
 
 	thread.wgwait(&wg)
 }

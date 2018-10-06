@@ -65,7 +65,9 @@ const rdlock = {rw
 const wrlock = {rw
 	for ; ;
 		if rw._owner == tid()
-			/* TODO: report an error here */
+			std.fput(std.Err,
+				"error: thread {} attempted to relock an rwlock it already holds\n",
+				tid())
 			std.suicide()
 		;;
 
@@ -136,7 +138,9 @@ const rdunlock = {rw
 
 const wrunlock = {rw
 	if rw._owner != tid()
-		/* TODO: report an error here */
+		std.fput(std.Err,
+			"error: thread {} attempted to unlock an rwlock last held by {}\n",
+			tid(), rw._owner)
 		std.suicide()
 	;;
 	rw._owner = -1

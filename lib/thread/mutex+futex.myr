@@ -33,7 +33,9 @@ const mtxlock = {mtx
 	var c
 
 	if mtx._owner == tid()
-		/* TODO: report an error here */
+		std.fput(std.Err,
+			"error: thread {} attempted to relock a mutex it already holds\n",
+			tid())
 		std.suicide()
 	;;
 
@@ -80,11 +82,9 @@ const mtxunlock = {mtx
 	mtx._owner doesn't seem worth it.
 	*/
 	if mtx._owner != tid()
-		/* XXX: put allocates, which locks and unlocks, so...
 		std.fput(std.Err,
 			"error: thread {} attempted to unlock a mutex last held by {}\n",
 			tid(), mtx._owner)
-		*/
 		std.suicide()
 	;;
 	mtx._owner = -1
@@ -104,7 +104,9 @@ const mtxunlock = {mtx
 
 const mtxcontended = {mtx
 	if mtx._owner == tid()
-		/* TODO: report an error here */
+		std.fput(std.Err,
+			"error: thread {} attempted to relock a mutex it already holds\n",
+			tid())
 		std.suicide()
 	;;
 

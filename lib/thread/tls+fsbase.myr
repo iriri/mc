@@ -20,6 +20,7 @@ var _cap = 8
 const gettlskey = {
 	std.assert(tid() == 0, "error: gettlskey must be called from main thread\n")
 	if _hdr == Zptr
+		/* `_hdr` is lazily initialized here since we can't set it in start.s */
 		_hdr = getfsbase()
 	;;
 
@@ -29,12 +30,12 @@ const gettlskey = {
 		var h = std.bytealloc(sizeof(tlshdr) + ((_cap *= 2 : std.size) * sizeof(void#)))
 
 		std.memblit(h, (_hdr : byte#), l)
-		/* ugh */
+		setfsbase((h : tlshdr#))
+		/* this is ugly... the initial tls region is statically allocated */
 		if _cap != 16
 			std.bytefree((_hdr : byte#), l)
 		;;
 		_hdr = (h : tlshdr#)
-		setfsbase(_hdr)
 	;;
 	-> _hdr.len - 1
 }
