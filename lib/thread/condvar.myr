@@ -9,56 +9,95 @@ pkg thread =
 	type cond = struct
 		_mtx	: mutex#
 		_head	: condwaiter#
-		_tail	: condwaiter#
 		_lock	: mutex
 	;;
 
-	const mkcond	: (mtx : mutex# -> cond)
-	const condwait	: (cond : cond# -> void)
+	const mkcond		: (mtx : mutex# -> cond)
+	const condwait		: (cond : cond# -> void)
 	const condsignal	: (cond : cond# -> void)
 	const condbroadcast	: (cond : cond# -> void)
+	const condselect	: (conds : cond#[:] -> uint32)
 ;;
 
 type condwaiter = struct
-	next : condwaiter#
-	sem : sem
+	next	: condwaiter#
+	prev	: condwaiter#
+	sem	: sem#
+	selid	: uint32#
+	id	: uint32
 ;;
+
+const Selmagic= -1
 
 const mkcond = {mtx
 	-> [._mtx = mtx, ._lock = mkmtx()]
 }
 
-const condwait = {cond
-	var mtx = cond._mtx
-	var lock = &cond._lock
-	var waiter = std.mk([.sem = mksem(0)])
-
-	mtxlock(lock)
-	match cond._tail
-	| Zptr: cond._head = cond._tail = waiter
-	| tail: cond._tail = tail.next = waiter
+const condpush = {cond, waiter
+	mtxlock(&cond._lock)
+	match cond._head
+	| Zptr: cond._head = waiter.prev = waiter
+	| head:
+		waiter.prev = head.prev
+		head.prev = waiter.prev.next = waiter
 	;;
+	mtxunlock(&cond._lock)
+}
 
-	mtxunlock(lock)
-	mtxunlock(mtx)
-	semwait(&waiter.sem)
+const condrm = {cond, waiter
+	mtxlock(&cond._lock)
+	match waiter.prev
+	| Zptr:
+	| prev:
+		if prev == waiter
+			cond._head = Zptr
+		else
+			match prev.next
+			| Zptr: cond._head = waiter.next
+			| _: prev.next = waiter.next
+			;;
+			match waiter.next
+			| Zptr: cond._head.prev = waiter.prev
+			| next: next.prev = waiter.prev
+			;;
+		;;
+	;;
+	mtxunlock(&cond._lock)
+}
+
+const condwait = {cond
+	/* we can't get away with stack allocating these due to plan 9 */
+	var sem = std.mk(mksem(0))
+	var waiter = std.mk([.sem = sem])
+
+	condpush(cond, waiter)
+	mtxunlock(cond._mtx)
+	semwait(sem)
+
 	std.free(waiter)
-	mtxlock(mtx)
+	std.free(sem)
+	mtxlock(cond._mtx)
 }
 
 const condsignal = {cond
-	var lock = &cond._lock
-
-	mtxlock(lock)
-	var head = cond._head
-	if head != Zptr
+	mtxlock(&cond._lock)
+:again
+	match cond._head
+	| Zptr:
+	| head:
 		cond._head = head.next
-		sempost(&head.sem)
-		if cond._head == Zptr
-			cond._tail = Zptr
+		if head.next != Zptr
+			head.next.prev = head.prev
 		;;
+		if head.selid != Zptr
+			head.prev = Zptr
+			if xcas(head.selid, Selmagic, head.id) != Selmagic
+				goto again
+			;;
+		;;
+		sempost(head.sem)
 	;;
-	mtxunlock(lock)
+	mtxunlock(&cond._lock)
 }
 
 /*
@@ -66,14 +105,47 @@ Yes, this invites the thundering herd but that's what you get for not
 supporting futexes at all.
 */
 const condbroadcast = {cond
-	var lock = &cond._lock
 	var head = Zptr
 
-	mtxlock(lock)
+	mtxlock(&cond._lock)
 	while (head = cond._head) != Zptr
 		cond._head = head.next
-		sempost(&head.sem)
+		if head.selid != Zptr
+			head.prev = Zptr
+			if xcas(head.selid, Selmagic, head.id) != Selmagic
+				continue
+			;;
+		;;
+		sempost(head.sem)
 	;;
-	cond._tail = Zptr
-	mtxunlock(lock)
+	mtxunlock(&cond._lock)
+}
+
+const condselect = {conds
+	var selid = std.mk(Selmagic)
+	var sem = std.mk(mksem(0))
+	var waiters = std.slalloc(conds.len)
+	var locks = std.mkht() /* multiple conds might share the same mtx... ugh */
+
+	/* in theory we should assert than conds.len < Selmagic but... */
+	for var i = 0; i < conds.len; i++
+		waiters[i] = [.sem = sem, .selid = selid, .id = i]
+		condpush(conds[i], &waiters[i])
+		std.htput(locks, conds[i]._mtx, void)
+	;;
+	for (l, _) : std.byhtkeyvals(locks)
+		mtxunlock(l)
+	;;
+	semwait(sem)
+
+	for var i = 0; i < conds.len; i++
+		condrm(conds[i], &waiters[i])
+	;;
+	var id = selid#
+	std.htfree(locks)
+	std.slfree(waiters)
+	std.free(sem)
+	std.free(selid)
+	mtxlock(conds[id]._mtx)
+	-> id
 }

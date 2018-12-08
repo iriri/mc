@@ -10,14 +10,15 @@ pkg thread =
 		cv	: cond
 	;;
 
-	type qnode(@a) = struct
-		v	: @a
-		next	: qnode(@a)#
-	;;
-
 	generic qinit	: (q : queue(@a)# -> void)
 	generic qget	: (q : queue(@a)# -> @a)
 	generic qput	: (q : queue(@a)#, v : @a -> void)
+	generic qselect	: (qs : queue(@a)#[:] -> (uint32, @a))
+;;
+
+type qnode(@a) = struct
+	v	: @a
+	next	: qnode(@a)#
 ;;
 
 generic Znode = (0 : qnode(@a)#)
@@ -62,4 +63,50 @@ generic qget = {q
 	v = n.v
 	std.free(n)
 	-> v
+}
+
+generic qselect = {qs
+	var q, id
+	var off = std.rand(0, qs.len)
+	var locks = std.slalloc(qs.len)[:0]
+
+	/* in theory we should assert than qs.len < 0xffffffff but... */
+:again
+	for var i = 0; i < qs.len; i++
+		var j = (i + off) % qs.len
+		q = qs[j]
+
+		std.slpush(&locks, &q.mtx)
+		mtxlock(&q.mtx)
+		if q.hd != Znode
+			id = j
+			goto ret
+		;;
+	;;
+
+	var conds = std.slalloc(qs.len)
+	for var i = 0; i < qs.len; i++
+		conds[i] = &qs[i].cv
+	;;
+	id = condselect(conds)
+	std.slfree(conds)
+
+	locks = locks[:0]
+	q = qs[id]
+	if q.hd == Znode
+		mtxunlock(&q.mtx)
+		goto again
+	;;
+
+	std.slpush(&locks, &q.mtx)
+:ret
+	var n = q.hd
+	q.hd = q.hd.next
+	for l : locks
+		mtxunlock(l)
+	;;
+	var v = n.v
+	std.slfree(locks)
+	std.free(n)
+	-> (id, v)
 }

@@ -27,7 +27,6 @@ lib thread =
 	waitgrp+futex.myr
 
 	# linux impl of basic thread primitives
-	condvar+linux.myr
 	exit+linux-x64.s
 	fsbase+linux.myr
 	futex+linux.myr
@@ -35,7 +34,6 @@ lib thread =
 	spawn+linux.myr
 
 	# freebsd impl of thread primitives
-	condvar+freebsd.myr
 	exit+freebsd-x64.s
 	fsbase+freebsd.myr
 	futex+freebsd.myr
@@ -43,7 +41,6 @@ lib thread =
 	spawn+freebsd.myr
 
 	# netbsd impl of thread primitives
-	#condvar+netbsd.myr
 	#mutex+netbsd.myr
 	fsbase+netbsd.myr
 	spawn+netbsd.myr
@@ -51,7 +48,6 @@ lib thread =
 	#exit+netbsd-x64.s
 
 	# osx impl of thread primitives
-	condvar+osx.myr
 	futex+osx.myr
 	spawn+osx.myr
 	start+osx-x64.s
@@ -60,7 +56,6 @@ lib thread =
 	types+osx.myr
 
 	# 9front impl of thread primitives
-	#condvar+plan9.myr
 	atomic-impl+plan9-x64.s
 	mutex+plan9.myr
 	ncpu+plan9.myr
@@ -70,7 +65,6 @@ lib thread =
 	types+plan9.myr
 
 	# openbsd impl of thread primitives
-	condvar+openbsd:6.2.myr
 	exit+openbsd-x64.s
 	fsbase+openbsd.myr
 	futex+openbsd:6.2.myr

@@ -3,12 +3,14 @@ use thread
 use testr
 
 const Nproduced = 100
+const Ncases = 10
 
 const main = {
 	testr.run([
 		[.name="simple-singlethreaded", .fn=simple],
 		[.name="slow-producer", .fn={ctx; producerconsumer(ctx, 100, 100)}],
 		[.name="fast-producer", .fn={ctx; producerconsumer(ctx, 10_000, 0)}],
+		[.name="select", .fn=select],
 	][:])
 }
 
@@ -43,4 +45,34 @@ const producer = {qp, count, delay
 			std.usleep(delay)
 		;;
 	;;
+}
+
+const select = {ctx
+	var qs = std.slalloc(Ncases)
+	var cases = std.slalloc(Ncases)
+	var wg = thread.mkwg(1)
+	var wgp = &wg
+
+	for var i = 0; i < Ncases; i++
+		thread.qinit(&qs[i])
+		cases[i] = &qs[i]
+		thread.spawn({
+			thread.wgwait(wgp)
+			std.usleep(1000000) /* ... */
+			thread.qput(&qs[i], i)
+		})
+	;;
+
+	var recvd = std.mkht()
+	thread.wgpost(&wg)
+	for var i = 0; i < Ncases; i++
+		var id, v
+		(id, v) = thread.qselect(cases)
+		std.htput(recvd, id, v)
+	;;
+	for var i = 0; i < Ncases; i++
+		testr.check(ctx, std.htgetv(recvd, (i : uint32), -1) == i, "expected {}\n", i)
+	;;
+	std.slfree(cases)
+	std.slfree(qs)
 }

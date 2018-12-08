@@ -33,6 +33,24 @@ const main = {
 	while nwoken != 100
 		thread.condbroadcast(&cv)
 	;;
+
+	ready = thread.mkwg(100)
+	nwoken = 0
+	thrtestutil.mkherd(100, cvselect)
+
+	thread.wgwait(&ready)
+	while nwoken != 100
+		thread.condsignal(&cv)
+	;;
+
+	ready = thread.mkwg(100)
+	nwoken = 0
+	thrtestutil.mkherd(100, cvselect)
+
+	thread.wgwait(&ready)
+	while nwoken != 100
+		thread.condsignal(&cv1)
+	;;
 }
 
 const cvwait = {
@@ -74,3 +92,11 @@ const cvwaitonce = {
 	thread.xadd(&nwoken, 1)
 }
 
+const cvselect = {
+	thread.mtxlock(&mtx)
+	thread.wgpost(&ready)
+	std.assert(thread.condselect([&cv, &cv1][:]) < 2, "condselect returned invalid id\n")
+	thread.mtxunlock(&mtx)
+
+	thread.xadd(&nwoken, 1)
+}
