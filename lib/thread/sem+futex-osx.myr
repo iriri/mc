@@ -5,12 +5,17 @@ use "futex"
 
 pkg thread =
 	/*
-	`ftxtag` must be 32 bits so that both members can be read in the same
-	atomic operation. Any exceptions, such as OS X, require a separate
-	implementation.
+	Unfortunately OS X requires a separate implementation as `ftxtag` is 64
+	bits here. We work around this by storing the value of the semaphore in
+	the high 32 bits of the full value that we wait on. Although the struct
+	is effectively an untagged union between 3 `uint32`s, a `uint64`
+	followed by a `uint32`, and a `uint32` followed by a `uint64`, it still
+	has 4 byte alignment, which is fine as one qword operation will always
+	be unaligned.
 	*/
 	type sem = struct
-		_val      : ftxtag
+		_pad      : uint32
+		_val      : uint32
 		_nwaiters : uint32
 	;;
 
@@ -35,7 +40,7 @@ const semwait = {s
 				-> void
 			;;
 		;;
-		ftxwait(&s._val, v, -1)
+		ftxwait((&s._pad : ftxtag#), v, -1)
 	;;
 }
 
@@ -53,20 +58,10 @@ const semtrywait = {s
 }
 
 const sempost = {s
-	/*
-	It's possible for the semaphore to be deallocated at any time after
-	`_val` is incremented so we must not dereference `s` a second time. We
-	work around this by also reading the value of `_nwaiters` during the
-	atomic fetch and add.
-	*/
-	var state = xadd((s : uint64#), 1)
+	var state = xadd((&s._val : uint64#), 1)
 	std.assert((state : uint32) != ~0x0, "error: semaphore overflowed\n")
 
 	if (state >> 32) > 0
-		/*
-		However, it is both legal and expected to pass a potentially
-		invalid address to `ftxwake`.
-		*/
-		ftxwake(&s._val)
+		ftxwake((&s._pad : ftxtag#))
 	;;
 }
