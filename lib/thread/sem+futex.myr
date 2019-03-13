@@ -6,8 +6,7 @@ use "futex"
 pkg thread =
 	/*
 	`ftxtag` must be 32 bits so that both members can be read in the same
-	atomic operation. Any exceptions, such as OS X, require a separate
-	implementation.
+	atomic operation.
 	*/
 	type sem = struct
 		_val      : ftxtag
